@@ -2,6 +2,33 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.2.1] — 2026-10-30 — diagnostics: what was pasted
+
+### Why
+The first real paste, from Gmail on Charles's Mac, read 34 lines as plain
+text and every one was flagged "first line did not read". Nothing was dropped
+or guessed. Unknown whether the clipboard held no usable table HTML or the
+parser did not find the table; the real plain text has no asterisks round the
+horse and reads "09:52 API" on the 10:00 slip, and its cells are probably tab
+separated. Charles's ruling: read the real shape before changing the parser.
+
+### Added
+- `src/diagnostics.js` and a collapsed "What was pasted" section under the
+  paste box, always present: each clipboard type received and its length, the
+  text/plain with tabs as →, carriage returns as ␍ and line feeds as ¶, the
+  first 4000 characters of the text/html as escaped text (never rendered), the
+  user agent, the source (paste event or Read box), and a Copy diagnostics
+  button with a read-only text box as the fallback. Kept in the browser with
+  the lines. No network.
+- Tests: the whitespace marks, the type list and lengths, the 4000 character
+  cut, a paste with no types, and the plain text form of the whole thing.
+
+### Recorded
+- A new bookmaker code, UN, appears in real data. Shown as it arrives, not
+  decoded, like the others.
+- The API time varies by slot: 09:52 on the 10:00 slip, 08:52 on the 09:00.
+  Both parsers already accept any HH:MM before "API".
+
 ## [0.2.0] — 2026-10-30 — paste, parse and show the lines (step 2)
 
 ### Added

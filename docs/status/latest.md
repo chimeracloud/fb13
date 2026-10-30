@@ -1,19 +1,21 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 0. **Written:** 2026-10-30 14:16 UK, by the build agent.
+**Unit:** FB13 Trade slip, version 0. **Written:** 2026-10-30 14:50 UK, by the build agent.
 
-**State:** steps 1 and 2 committed locally (0.1.0, 0.2.0): repository files,
-skeleton, then paste, parse and show the lines with tests from the real
-fixtures. Nothing pushed yet. Nothing has been built or run on this machine, by
-rule; the first run of the tests and the build is the Pages build. Step 3
-(Placed and Not placed, the form, counters, history) is next.
+**State:** live at fb13.chimerasportstrading.com on 0.2.0 (d2f5151; the Pages
+build passed). The first real paste from Gmail on a Mac read 34 lines as plain
+text and parsed none; nothing dropped or guessed. Commit A (0.2.1) adds the
+"What was pasted" diagnostics so the real clipboard shape can be read. Step 3
+(Placed and Not placed, written and committed earlier as 661fb04) is being
+re-based on top of A and held locally. Commit B (the parsers for the real
+shape) follows locally and is held until checked against the diagnostics.
 
 **Waiting for (from Charles):**
-- The word to push, after the step 1 and step 2 reports.
-- The Pages project and the Cloudflare Access application for
-  fb13.chimerasportstrading.com, which Charles creates. Not blocking the build.
+- The Pages build result for A, then a paste of the real slip and the copied
+  diagnostics.
+- The word to push step 3 and B.
 
-**Last did:** committed step 2, 2026-10-30 14:16 UK.
+**Last did:** committed A, 2026-10-30 14:50 UK.
 
 **Found and reported, not acted on:** CHI-BRF-002 and CHI-BRF-004 disagree on
 the Node version (20 against 22). Building on 22 as approved; recorded in the

@@ -16,6 +16,7 @@ export function loadState(storage = globalThis.localStorage) {
       pastes: Array.isArray(data.pastes) ? data.pastes : [],
       lines: data.lines,
       entries: Array.isArray(data.entries) ? data.entries : [],
+      diagnostics: data.diagnostics && typeof data.diagnostics === 'object' ? data.diagnostics : null,
     };
   } catch {
     return null;

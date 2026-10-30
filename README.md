@@ -19,8 +19,9 @@ own, so this version is a worksheet and not yet the record.
 | --- | --- | --- |
 | 0 | Onboarding message to Charles | Sent 30 October 2026, approved |
 | 1 | Repository files, skeleton page, Pages settings | Committed locally, 0.1.0 |
-| 2 | Paste, parse and show the lines | Committed locally, 0.2.0 |
-| 3 | Placed and Not placed, the form, counters, history | Next |
+| 2 | Paste, parse and show the lines | Pushed 30 October 2026, 0.2.0; Pages build passed; live |
+| 2a | Diagnostics: what was pasted | 0.2.1, for the first real paste from Gmail, which read nothing |
+| 3 | Placed and Not placed, the form, counters, history | Written, held locally until the diagnostics are read |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -43,6 +44,14 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   recorded against any of its lines. An Add line button covers a bet that is
   not on the slip. If the browser gives the page nothing on paste, the slip
   lands in the box and a Read box button parses it from there.
+- Under the paste box, a collapsed section "What was pasted" shows what the
+  last paste handed the page: each clipboard type and its length, the
+  text/plain with tabs as → and line breaks as ¶, the first 4000 characters of
+  the text/html as escaped text (never rendered), the browser's user agent,
+  and a Copy diagnostics button. It is kept in the browser with the lines so
+  it survives a reload. Nothing in it leaves the page. It exists because the
+  first real paste, from Gmail on a Mac on 30 October 2026, read 34 lines as
+  plain text and could parse none of them.
 - Each line carries all seven columns with its slot and date, and two buttons:
   Placed and Not placed. Placed opens a form: where (Betfair, each bookmaker
   code on that line, or Other), side (back or lay), price obtained, whether the
@@ -59,8 +68,9 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
 - It places no bet, logs in nowhere, scrapes nothing and holds no credential.
 - It does not decode the bookmaker codes on the slip (B3, WH, LD, CE, BY, FB,
-  SI, SX, BTT, FR, Betano, BetMGM, Midnite). They are shown exactly as they
-  arrive. Charles holds the mapping.
+  SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN, seen in real data on 30
+  October 2026). They are shown exactly as they arrive. Charles holds the
+  mapping.
 - It sends nothing anywhere: no analytics, no third party script, no CDN, no
   fonts fetched. The only requests are for its own files.
 - It never edits or deletes a history entry.
@@ -131,9 +141,12 @@ Node 22 build is 22.23.4 as of 30 October 2026.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0, and the page says so.
-- **Plain text paste.** The fallback parser handles the email's plain text
-  shape as it is today. If the email's text form changes, affected rows are
-  flagged and shown raw rather than guessed.
+- **Plain text paste.** The fallback parser handles the email's own plain
+  text shape (two lines per selection, the horse between asterisks). A browser
+  copy from Gmail has no asterisks and, probably, tab separated cells; the
+  first real paste read nothing. The diagnostics section exists to settle the
+  real shape before the parser is changed. Flagged rows are shown raw, never
+  guessed.
 
 ## Repository layout
 
@@ -143,6 +156,7 @@ src/main.jsx          mounts the app
 src/App.jsx           the page: paste box, lines, add line
 src/parse.js          the slip parser, both paths, pure functions
 src/storage.js        browser storage, every call in try/catch
+src/diagnostics.js    what the last paste handed the page, as text
 src/dates.js          today and now in Europe/London
 src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build

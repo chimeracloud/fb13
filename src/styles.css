@@ -410,3 +410,57 @@ details summary {
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+/* ---- diagnostics: what was pasted ---- */
+
+.diagnostics {
+  margin: 8px 0 16px;
+  padding: 8px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.diagnostics h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.diag-types {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.diag-types th,
+.diag-types td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+pre.diag {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.diag-copy {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}

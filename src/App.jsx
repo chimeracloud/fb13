@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { todayInLondon } from './dates.js';
 import { parseSlip, manualLine, newId, COLUMNS, COLUMN_LABELS } from './parse.js';
 import { loadState, saveState } from './storage.js';
+import { buildDiagnostics, diagnosticsText } from './diagnostics.js';
 
 const SLOTS = ['08:00', '09:00', '10:00'];
-const EMPTY = { version: 1, pastes: [], lines: [], entries: [] };
+const EMPTY = { version: 1, pastes: [], lines: [], entries: [], diagnostics: null };
 
 function plural(n, word) {
   return `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -62,6 +63,10 @@ export default function App() {
       }${flagged ? `, ${flagged} flagged` : ''}. Check them below against the email.`,
     });
     return true;
+  }
+
+  function setDiagnostics(d) {
+    setState((s) => ({ ...s, diagnostics: d }));
   }
 
   function addManual(cells) {
@@ -127,7 +132,9 @@ export default function App() {
           </label>
         </section>
 
-        <PasteBox onPaste={(clip) => addParsed(parseSlip(clip))} />
+        <PasteBox onPaste={(clip) => addParsed(parseSlip(clip))} onDiagnostics={setDiagnostics} />
+
+        <DiagnosticsPanel diagnostics={state.diagnostics} />
 
         {message && (
           <p className={`message ${message.kind}`} role="status">
@@ -204,7 +211,7 @@ export default function App() {
   );
 }
 
-function PasteBox({ onPaste }) {
+function PasteBox({ onPaste, onDiagnostics }) {
   const ref = useRef(null);
   const [hasContent, setHasContent] = useState(false);
 
@@ -220,8 +227,32 @@ function PasteBox({ onPaste }) {
 
   function handlePaste(e) {
     const cd = e.clipboardData;
-    const html = cd ? cd.getData('text/html') : '';
-    const text = cd ? cd.getData('text/plain') : '';
+    let types = [];
+    try {
+      types = cd && cd.types ? Array.from(cd.types) : [];
+    } catch {
+      types = [];
+    }
+    const data = {};
+    for (const t of types) {
+      try {
+        data[t] = cd.getData(t);
+      } catch {
+        data[t] = '';
+      }
+    }
+    const html = cd ? data['text/html'] ?? cd.getData('text/html') : '';
+    const text = cd ? data['text/plain'] ?? cd.getData('text/plain') : '';
+    onDiagnostics(
+      buildDiagnostics({
+        source: 'paste event',
+        types,
+        data,
+        html,
+        text,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      }),
+    );
     if (!html && !text) return; // let the browser paste; the person taps Read box
     e.preventDefault();
     const ok = onPaste({ html, text });
@@ -236,6 +267,16 @@ function PasteBox({ onPaste }) {
   function readBox() {
     const el = ref.current;
     if (!el) return;
+    onDiagnostics(
+      buildDiagnostics({
+        source: 'read box',
+        types: [],
+        data: {},
+        html: el.innerHTML,
+        text: el.innerText,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      }),
+    );
     const ok = onPaste({ html: el.innerHTML, text: el.innerText });
     if (ok) clear();
   }
@@ -393,5 +434,74 @@ function AddLineForm({ slot, date, onAdd, onCancel }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function DiagnosticsPanel({ diagnostics }) {
+  const [copied, setCopied] = useState(null);
+  const text = diagnosticsText(diagnostics);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied('Copied.');
+    } catch {
+      setCopied('Copy did not work here. Select the text in the box below and copy it by hand.');
+    }
+  }
+
+  return (
+    <details className="diagnostics">
+      <summary>What was pasted</summary>
+      {diagnostics ? (
+        <>
+          <p className="sub">
+            Last paste at {diagnostics.at}, via {diagnostics.source}. Shown as text, never rendered.
+            Nothing here leaves this page.
+          </p>
+          <table className="diag-types">
+            <thead>
+              <tr>
+                <th>Clipboard type</th>
+                <th>Characters</th>
+              </tr>
+            </thead>
+            <tbody>
+              {diagnostics.items.length === 0 ? (
+                <tr>
+                  <td colSpan={2}>none handed to the page</td>
+                </tr>
+              ) : (
+                diagnostics.items.map((i) => (
+                  <tr key={i.type}>
+                    <td>{i.type}</td>
+                    <td>{i.length}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          <h4>
+            text/plain, {diagnostics.textLength} characters. Tabs as →, carriage returns as ␍, line
+            feeds as ¶.
+          </h4>
+          <pre className="diag">{diagnostics.textMarked || '(empty)'}</pre>
+          <h4>
+            text/html, {diagnostics.htmlLength} characters
+            {diagnostics.htmlTruncated ? ', first 4000 shown' : ''}.
+          </h4>
+          <pre className="diag">{diagnostics.htmlSample || '(empty)'}</pre>
+        </>
+      ) : (
+        <p className="sub">No paste yet.</p>
+      )}
+      <div className="row">
+        <button type="button" onClick={copy} disabled={!diagnostics}>
+          Copy diagnostics
+        </button>
+      </div>
+      {copied && <p className="sub">{copied}</p>}
+      <textarea className="diag-copy" readOnly value={text} rows={4} aria-label="Diagnostics as text" />
+    </details>
   );
 }
