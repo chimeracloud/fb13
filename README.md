@@ -18,10 +18,10 @@ own, so this version is a worksheet and not yet the record.
 | Step | What | State |
 | --- | --- | --- |
 | 0 | Onboarding message to Charles | Sent 30 October 2026, approved |
-| 1 | Repository files, skeleton page, Pages settings | Committed locally, 0.1.0 |
+| 1 | Repository files, skeleton page, Pages settings | Pushed 30 October 2026, 0.1.0 |
 | 2 | Paste, parse and show the lines | Pushed 30 October 2026, 0.2.0; Pages build passed; live |
-| 2a | Diagnostics: what was pasted | 0.2.1, for the first real paste from Gmail, which read nothing |
-| 3 | Placed and Not placed, the form, counters, history | Written, held locally until the diagnostics are read |
+| 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
+| 3 | Placed and Not placed, the form, counters, history | Committed locally, 0.3.0, held until the diagnostics are read |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -58,9 +58,13 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   BOG price applied (yes, no, unknown), stake (default 50, editable), time
   (default now in Europe/London), how it was placed (by an app, by a person,
   automatic), mode (paper or real, required, default paper, stated by the
-  person and never inferred), and an optional reference. (Step 3.)
-- Counters at the top: lines, placed, waiting, not placed. An edit is a new
-  entry, never an overwrite, and each line's history stays visible. (Step 3.)
+  person and never inferred), and an optional reference. Where, side, price
+  and how have no default and must be chosen. Not placed records at once, with
+  the time.
+- Counters at the top: lines, placed, waiting, not placed, and flagged when any
+  line is. A line's state is its latest entry. An edit is a new entry, never an
+  overwrite, and each line's history stays visible under the line, newest
+  first, with the UK time it was recorded.
 - Export downloads every entry as CSV and JSON, each row carrying the slot, the
   date and the mode. (Step 4.)
 
@@ -155,6 +159,7 @@ index.html            the one page
 src/main.jsx          mounts the app
 src/App.jsx           the page: paste box, lines, add line
 src/parse.js          the slip parser, both paths, pure functions
+src/entries.js        the placed form's defaults and checks, append-only entries, counters
 src/storage.js        browser storage, every call in try/catch
 src/diagnostics.js    what the last paste handed the page, as text
 src/dates.js          today and now in Europe/London

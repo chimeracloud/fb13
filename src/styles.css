@@ -411,6 +411,156 @@ details summary {
   }
 }
 
+/* ---- step 3: placed and not placed, the form, history ---- */
+
+.counter.ok .n {
+  color: var(--ok);
+}
+
+.chip.status.placed {
+  background: #10281a;
+  color: #8fd19e;
+}
+
+.chip.status.not_placed {
+  background: var(--panel-2);
+  color: var(--cream);
+}
+
+.chip.status.waiting {
+  background: #2a2110;
+  color: var(--gold);
+}
+
+.chip.mode.real {
+  background: #3a0f0c;
+  color: #ff9c96;
+  font-weight: 700;
+}
+
+.chip.mode.paper {
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.line.status-placed {
+  border-left: 3px solid var(--ok);
+}
+
+.line.status-not_placed {
+  border-left: 3px solid var(--line);
+  opacity: 0.85;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.actions button {
+  flex: 1 1 0;
+}
+
+.placed-form {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  background: var(--panel-2);
+  display: grid;
+  gap: 12px;
+}
+
+.placed-form h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--gold);
+}
+
+.placed-form .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.choice-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice-options .opt {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--cream);
+}
+
+.choice-options .opt.selected {
+  border-color: var(--gold);
+  background: #2a2110;
+  font-weight: 600;
+}
+
+.choice-options .opt.real.selected {
+  border-color: var(--warn);
+  background: #3a0f0c;
+  color: #ff9c96;
+}
+
+.err {
+  color: #f0a09c;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.history {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.history ol {
+  margin: 6px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.history li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.history li:last-child {
+  border-bottom: none;
+}
+
+.history li.not_placed {
+  color: var(--muted);
+}
+
+.history .when {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---- diagnostics: what was pasted ---- */
 
 .diagnostics {

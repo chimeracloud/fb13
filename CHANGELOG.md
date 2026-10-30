@@ -2,6 +2,31 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.3.0] — 2026-10-30 — placed and not placed, the form, counters, history (step 3)
+
+### Added
+- `src/entries.js`: the placed form's defaults (mode paper, stake 50, time now
+  in Europe/London, BOG unknown, nothing else chosen), its checks (where, side,
+  a numeric price and how are required; a bookmaker name when where is Other;
+  a numeric stake; HH:MM time; paper or real), entries as append-only records
+  carrying the line, slot, date, the UTC instant and the UK time, and the
+  counters (lines, placed, waiting, not placed, flagged) read from each line's
+  latest entry.
+- The page: four counters at the top; Placed and Not placed on every line,
+  flagged lines included; the Placed form inline under the line with
+  thumb-sized choices for where (Betfair, each code on that line as written,
+  Other with a box for the name), side, BOG, how and mode, with real shown in
+  red; a status chip and a PAPER or REAL chip on each line; the line's history
+  under it, newest first, each entry with the UK time it was recorded; the
+  footer now says an entry is never edited or deleted.
+- Tests: the where options from the real Dove Tale and No Hard Feelings rows,
+  the form's opening state, what it refuses to save, a complete entry field by
+  field, a code kept as written, Other named, not placed, an edit kept as a
+  second entry with the latest deciding the state, and the counters.
+
+### Not yet
+- Export (step 4).
+
 ## [0.2.1] — 2026-10-30 — diagnostics: what was pasted
 
 ### Why
