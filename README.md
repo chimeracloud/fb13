@@ -21,8 +21,8 @@ own, so this version is a worksheet and not yet the record.
 | 1 | Repository files, skeleton page, Pages settings | Pushed 30 October 2026, 0.1.0 |
 | 2 | Paste, parse and show the lines | Pushed 30 October 2026, 0.2.0; Pages build passed; live |
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
-| 3 | Placed and Not placed, the form, counters, history | Committed locally, 0.3.0, held until the diagnostics are read |
-| B | Parsers for the real browser copy: seven cells by position, tab separated text | Committed locally, 0.3.1, checked against the real paste of 15:13 UK, 30 October 2026; awaiting the word to push |
+| 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
+| B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against the real pastes of 15:13 and 15:48 UK |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -79,9 +79,11 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
 - It places no bet, logs in nowhere, scrapes nothing and holds no credential.
 - It does not decode the bookmaker codes on the slip (B3, WH, LD, CE, BY, FB,
-  SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN and 10bet, seen in real
-  data on 30 October 2026). They are shown exactly as they arrive. Charles
-  holds the mapping.
+  SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN, 10bet, PP, LiveScore Bet
+  and Virgin Bet, seen in real data on 30 October 2026). They are shown exactly
+  as they arrive, including a space inside a code; they are split only on the
+  comma, and only to offer them in the "where" field. Charles holds the
+  mapping.
 - It sends nothing anywhere: no analytics, no third party script, no CDN, no
   fonts fetched. The only requests are for its own files.
 - It never edits or deletes a history entry.

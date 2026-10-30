@@ -503,3 +503,89 @@ describe('the real paste from Gmail in Safari, 30 October 2026', () => {
     expect(r.lines[0].cells).toEqual(REAL_DOVE);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The second real paste, 30 October 2026, 15:48 UK, same browser, a different
+// day's 10:00 slip: text/html 96,756 chars, text/plain 1,889 chars. New in it:
+// bookmaker codes with a space inside, PP, and the two word course Ffos Las.
+
+import { REAL_PLAIN_1548, REAL_PLAIN_1548_SELECTIONS } from './fixtures/real-2026-10-30-1548-slip-1000.js';
+
+describe('the second real paste from Gmail in Safari, 30 October 2026', () => {
+  it('is the text the diagnostics reported, to the character', () => {
+    expect(REAL_PLAIN_1548.length).toBe(1889);
+    expect(REAL_PLAIN_1548_SELECTIONS).toBe(22);
+  });
+
+  it('reads all 22 selections, none flagged, nothing in the note', () => {
+    const r = parsePlainSlip(REAL_PLAIN_1548);
+    expect(r.mapped).toBe('tabs');
+    expect(r.lines).toHaveLength(22);
+    expect(r.lines.filter((l) => !l.parsed)).toEqual([]);
+    expect(r.note).toBe('');
+    expect(r.lines.every((l) => l.derived.betfairTime === '09:52 API')).toBe(true);
+    expect(r.lines[0].cells.horse).toBe('Lady Phillips');
+    expect(r.lines[21].cells.horse).toBe('Sevenkingsmustdie');
+  });
+
+  it('keeps codes with a space inside as written, and splits them only on the comma', () => {
+    const r = parsePlainSlip(REAL_PLAIN_1548);
+    const by = (horse) => r.lines.find((l) => l.cells.horse === horse);
+    expect(by('Wunderschon').cells.bestPrice).toBe('2.38 LiveScore Bet, Virgin Bet');
+    expect(by('Wunderschon').derived.codes).toEqual(['LiveScore Bet', 'Virgin Bet']);
+    expect(by('Space Bob').derived.codes).toEqual(['B3', 'LiveScore Bet']);
+    expect(by('Ugo Bingo').derived.codes).toEqual(['FB', 'PP']);
+    expect(by('Fairye Forth').derived.codes).toEqual(['10bet']);
+    expect(by('Pedros Dream').derived.codes).toEqual(['FR']);
+  });
+
+  it('reads a two word course and the rest of the row as it arrived', () => {
+    const r = parsePlainSlip(REAL_PLAIN_1548);
+    const by = (horse) => r.lines.find((l) => l.cells.horse === horse);
+    expect(by('Passage Guenot').cells).toEqual({
+      race: '14:00 Ffos Las',
+      horse: 'Passage Guenot',
+      bestPrice: '3.50 B3',
+      bestBog: '3.25',
+      betfair: '3.55\n09:52 API',
+      layTarget: '3.10 (13% under)',
+      betfairCap: '£150',
+    });
+    expect(by('Dance In The Mist').cells.race).toBe('16:20 Stratford');
+    expect(by('Sevenkingsmustdie').cells).toEqual({
+      race: '19:30 Southwell',
+      horse: 'Sevenkingsmustdie',
+      bestPrice: '4.00 WH',
+      bestBog: '4.00',
+      betfair: '3.70\n09:52 API',
+      layTarget: '3.20 (13% under)',
+      betfairCap: '£125',
+    });
+  });
+
+  it('reads the real Safari markup of its first row by position', () => {
+    // The first five cells verbatim from the diagnostics; the last two carry the
+    // same style and the email's own markup, as in the earlier Safari test.
+    const row =
+      `${SAFARI_TD}12:42 Bath</td>` +
+      `${SAFARI_TD}<b>Lady Phillips</b></td>` +
+      `${SAFARI_TD}1.67${NBSP}<span style="color: rgb(119, 119, 119);">SI, SX</span></td>` +
+      `${SAFARI_TD}1.57</td>` +
+      `${SAFARI_TD}1.75${NBSP}<br><span style="color: rgb(119, 119, 119); font-size: 11px;">09:52 API</span></td>` +
+      `${SAFARI_TD}<b>1.66</b>${NBSP}<span style="color: rgb(119, 119, 119);">(5% under)</span></td>` +
+      `${SAFARI_TD}£115</td>`;
+    const r = parseHtmlSlip(`<head><meta charset="UTF-8"></head><table style="border-collapse: collapse; width: 1028px;"><tbody><tr>${row}</tr></tbody></table>`);
+    expect(r.mapped).toBe('position');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].cells).toEqual({
+      race: '12:42 Bath',
+      horse: 'Lady Phillips',
+      bestPrice: '1.67 SI, SX',
+      bestBog: '1.57',
+      betfair: '1.75\n09:52 API',
+      layTarget: '1.66 (5% under)',
+      betfairCap: '£115',
+    });
+    expect(r.lines[0].derived.codes).toEqual(['SI', 'SX']);
+  });
+});

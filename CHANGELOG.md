@@ -2,6 +2,21 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.3.2] — 2026-10-30 — the second real paste as a fixture
+
+### Tests
+- The text of the second real paste (15:48 UK, same browser, a different
+  day's 10:00 slip: Bath, Punchestown, Stratford, Ffos Las, Southwell) kept to
+  the character (1,889) and read: 22 selections, none flagged, nothing in the
+  note; codes with a space inside kept as written and split only on the comma
+  (LiveScore Bet, Virgin Bet; B3, LiveScore Bet; FB, PP); the two word course
+  Ffos Las; Passage Guenot and Sevenkingsmustdie cell by cell; the real Safari
+  markup of its first row read by position.
+
+### Recorded
+- New bookmaker codes in real data: PP, LiveScore Bet, Virgin Bet. Shown as
+  they arrive, not decoded.
+
 ## [0.3.1] — 2026-10-30 — parsers for the real browser copy (B)
 
 Checked against the real paste of 15:13 UK on 30 October 2026 (Gmail in Safari
