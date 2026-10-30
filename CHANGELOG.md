@@ -2,6 +2,39 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.2.0] — 2026-10-30 — paste, parse and show the lines (step 2)
+
+### Added
+- `src/parse.js`. The HTML path: finds the slip table (including inside a mail
+  client's layout table), maps the seven columns by header text so order does
+  not matter, keeps every cell as the text that arrived with `<br>` kept as a
+  line break, flags a row with the wrong number of cells or a table missing a
+  header and shows it raw, keeps everything outside the table as a note. The
+  plain text path: a line starting with a time and a course starts a row, the
+  line starting with "07:52 API" completes it, the pair is joined; a row with
+  no second line or an unreadable first line is shown raw and flagged; header
+  and lay rules text become the note. Bookmaker codes are split only to offer
+  them in the "where" field; the cell itself stays verbatim.
+- `src/storage.js`: browser storage under one key, every read and write in
+  try/catch, the page tells the person when the browser refuses to save.
+- The page: the paste box (contenteditable; reads text/html then text/plain
+  from the clipboard; a Read box button for browsers that paste without
+  handing the page the clipboard), counters for lines and flagged, each paste
+  shown as a group with its time and note, each line showing slot, date and
+  all seven columns with the Betfair check highlighted and "As pasted" under
+  it, Add line for a bet not on the slip, a switch to other dates that have
+  lines, and the worksheet notice.
+- Tests from the real fixtures: the four HTML rows cell by cell, the codes,
+  the check flag, reordered columns, a short row flagged, a missing header
+  flagged, the note kept and unparsed, the slip inside a layout table, the
+  three plain text selections equal to their HTML cells, header and lay rules
+  as note, a missing second line flagged, an unreadable first line flagged,
+  HTML preferred over text, text fallback, HTML without a table read as text,
+  the empty paste, a hand-added line.
+
+### Not yet
+- Placed and Not placed, the form, the history (step 3). Export (step 4).
+
 ## [0.1.0] — 2026-10-30 — skeleton (step 1)
 
 ### Added

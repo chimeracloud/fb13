@@ -19,8 +19,8 @@ own, so this version is a worksheet and not yet the record.
 | --- | --- | --- |
 | 0 | Onboarding message to Charles | Sent 30 October 2026, approved |
 | 1 | Repository files, skeleton page, Pages settings | Committed locally, 0.1.0 |
-| 2 | Paste, parse and show the lines | Next |
-| 3 | Placed and Not placed, the form, counters, history | |
+| 2 | Paste, parse and show the lines | Committed locally, 0.2.0 |
+| 3 | Placed and Not placed, the form, counters, history | Next |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -38,7 +38,11 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   into one row.
 - Every parsed line is shown for the person to check, with a count. A line
   that cannot be read is shown as it is and flagged. Nothing is dropped and
-  nothing is guessed. An Add line button covers a bet that is not on the slip.
+  nothing is guessed. Each paste is kept as a group with the time it was pasted
+  and the note below the table, and can be removed only while nothing has been
+  recorded against any of its lines. An Add line button covers a bet that is
+  not on the slip. If the browser gives the page nothing on paste, the slip
+  lands in the box and a Read box button parses it from there.
 - Each line carries all seven columns with its slot and date, and two buttons:
   Placed and Not placed. Placed opens a form: where (Betfair, each bookmaker
   code on that line, or Other), side (back or lay), price obtained, whether the
@@ -136,7 +140,9 @@ Node 22 build is 22.23.4 as of 30 October 2026.
 ```
 index.html            the one page
 src/main.jsx          mounts the app
-src/App.jsx           the page
+src/App.jsx           the page: paste box, lines, add line
+src/parse.js          the slip parser, both paths, pure functions
+src/storage.js        browser storage, every call in try/catch
 src/dates.js          today and now in Europe/London
 src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build
