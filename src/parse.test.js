@@ -229,3 +229,277 @@ describe('a line added by hand', () => {
     expect(l.derived.codes).toEqual(['WH']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// B: the real shape from a browser copy, 30 October 2026. The two real lines
+// as the page showed them, with the cells collapsed to spaces:
+//   11:35 Newmarket Dove Tale 2.88 B3, SI 2.75 3.10
+//   09:52 API 2.70 (13% under) £240
+// Tab positions below are the expected ones (a browser copies a table with a
+// tab between cells and the <br> inside the Betfair cell as a line break) and
+// are to be confirmed from the diagnostics before this commit is pushed.
+
+const REAL_DOVE = {
+  race: '11:35 Newmarket',
+  horse: 'Dove Tale',
+  bestPrice: '2.88 B3, SI',
+  bestBog: '2.75',
+  betfair: '3.10\n09:52 API',
+  layTarget: '2.70 (13% under)',
+  betfairCap: '£240',
+};
+
+const REAL_TABBED = '11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\t3.10\n09:52 API\t2.70 (13% under)\t£240\n';
+
+describe('B: an HTML table without a header row', () => {
+  it('maps seven cells by position and reads the same cells as with a header', () => {
+    const r = parseHtmlSlip(`<table>${ROW_DOVE}${ROW_SERVE}${ROW_FEELINGS}${ROW_STARS}</table>`);
+    expect(r.mapped).toBe('position');
+    expect(r.lines).toHaveLength(4);
+    expect(r.lines.every((l) => l.parsed)).toBe(true);
+    expect(r.lines[0].cells).toEqual(DOVE);
+    expect(r.lines[2].cells).toEqual(FEELINGS);
+    expect(r.lines[3].cells).toEqual(STARS);
+    expect(r.lines[3].derived.codes).toEqual(['B3', 'BetMGM']);
+  });
+
+  it('still prefers the header when there is one', () => {
+    expect(parseHtmlSlip(TABLE).mapped).toBe('header');
+  });
+
+  it('keeps a line break inside a cell, however the mail client wrote it', () => {
+    const row =
+      '<tr><td><div>11:35 Newmarket</div></td><td><div><b>Dove Tale</b></div></td><td><div>2.88 <span>B3, SI</span></div></td><td><div>2.75</div></td><td><div>3.10</div><div>09:52 API</div></td><td><div><b>2.70</b> (13% under)</div></td><td><div>£240</div></td></tr>';
+    const r = parseHtmlSlip(`<table><tbody>${row}</tbody></table>`);
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+    expect(r.lines[0].derived.betfairTime).toBe('09:52 API');
+  });
+
+  it('flags a row that is not seven cells and keeps counting', () => {
+    const six = '<tr><td>16:10 Newmarket</td><td><b>Some Horse</b></td><td>3.00 <span>WH</span></td><td>3.00</td><td>3.20 <br><span>09:52 API</span></td><td>£100</td></tr>';
+    const r = parseHtmlSlip(`<table>${ROW_DOVE}${six}${ROW_STARS}</table>`);
+    expect(r.lines).toHaveLength(3);
+    expect(r.lines[1].parsed).toBe(false);
+    expect(r.lines[1].flag).toBe('6 cells, expected 7');
+    expect(r.lines[1].raw).toContain('Some Horse');
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[2].parsed).toBe(true);
+  });
+
+  it('does not read a header row with other names as a bet', () => {
+    const other = '<tr><td>Time</td><td>Selection</td><td>Price</td><td>BOG</td><td>Exchange</td><td>Target</td><td>Cap</td></tr>';
+    const r = parseHtmlSlip(`<table>${other}${ROW_DOVE}</table>`);
+    expect(r.lines).toHaveLength(2);
+    expect(r.lines[0].parsed).toBe(false);
+    expect(r.lines[0].flag).toBe('first cell is not a race time');
+    expect(r.lines[1].cells).toEqual(DOVE);
+  });
+
+  it('finds the seven cell table inside a layout table', () => {
+    const html = `<table><tr><td><div>Hello</div><table>${ROW_DOVE}${ROW_STARS}</table></td></tr></table>`;
+    const r = parseHtmlSlip(html);
+    expect(r.lines).toHaveLength(2);
+    expect(r.lines[0].cells).toEqual(DOVE);
+    expect(r.note).toBe('Hello');
+  });
+
+  it('returns null when no table has a header or seven cell rows', () => {
+    expect(parseHtmlSlip('<table><tr><td>a</td><td>b</td></tr></table>')).toBeNull();
+  });
+});
+
+describe('B: plain text with tabs, a browser copy of the table', () => {
+  it('reads the two real lines, five cells then three, into one row', () => {
+    const r = parsePlainSlip(REAL_TABBED);
+    expect(r.mapped).toBe('tabs');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+    expect(r.lines[0].derived.codes).toEqual(['B3', 'SI']);
+    expect(r.lines[0].derived.betfairTime).toBe('09:52 API');
+  });
+
+  it('accepts asterisks round the horse and the lay target, and reads the same cells without them', () => {
+    const starred = '11:35 Newmarket\t*Dove Tale*\t2.88 B3, SI\t2.75\t3.10\n09:52 API\t*2.70* (13% under)\t£240';
+    expect(parsePlainSlip(starred).lines[0].cells).toEqual(REAL_DOVE);
+  });
+
+  it('reads several selections, the no price read row and the check row among them', () => {
+    const text = [
+      'Race\tHorse\tBest price\tBest BOG\tBetfair\tLay target\tBetfair cap',
+      REAL_TABBED.trim(),
+      '15:20 Uttoxeter\tNo Hard Feelings\tno price read\t–\t–',
+      '09:52 API\t–\t£140',
+      '19:00 Dundalk\tWearing Stars\t2.50 B3, UN\t2.50\t2.02 ⚠ check',
+      '09:52 API\t1.76 (13% under)\t£25',
+      'Lay rules: lay at the target or better.',
+    ].join('\n');
+    const r = parsePlainSlip(text);
+    expect(r.lines).toHaveLength(3);
+    expect(r.lines.every((l) => l.parsed)).toBe(true);
+    expect(r.lines[1].cells).toEqual({
+      race: '15:20 Uttoxeter',
+      horse: 'No Hard Feelings',
+      bestPrice: 'no price read',
+      bestBog: '–',
+      betfair: '–\n09:52 API',
+      layTarget: '–',
+      betfairCap: '£140',
+    });
+    expect(r.lines[2].cells.betfair).toBe('2.02 ⚠ check\n09:52 API');
+    expect(r.lines[2].derived.betfairCheck).toBe(true);
+    expect(r.lines[2].derived.codes).toEqual(['B3', 'UN']);
+    expect(r.note).toContain('Race | Horse | Best price');
+    expect(r.note).toContain('Lay rules: lay at the target or better.');
+  });
+
+  it('reads seven cells on one line as a complete row', () => {
+    const r = parsePlainSlip('11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\t3.10 09:52 API\t2.70 (13% under)\t£240');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[0].cells.betfair).toBe('3.10 09:52 API');
+    expect(r.lines[0].cells.betfairCap).toBe('£240');
+  });
+
+  it('flags a first line with no API line after it, and shows it', () => {
+    const r = parsePlainSlip('11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\t3.10\n19:00 Dundalk\tWearing Stars\t2.50 B3, UN\t2.50\t2.02\n09:52 API\t1.76 (13% under)\t£25');
+    expect(r.lines).toHaveLength(2);
+    expect(r.lines[0].parsed).toBe(false);
+    expect(r.lines[0].flag).toBe('5 cells, expected 7 on one line or 5 then an API line of 3');
+    expect(r.lines[0].raw).toBe('11:35 Newmarket | Dove Tale | 2.88 B3, SI | 2.75 | 3.10');
+    expect(r.lines[1].parsed).toBe(true);
+  });
+
+  it('flags a pair whose cell counts are off, and shows both lines', () => {
+    const r = parsePlainSlip('11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\n09:52 API\t2.70 (13% under)\t£240');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(false);
+    expect(r.lines[0].flag).toBe('4 cells then 3 on the API line, expected 5 then 3');
+    expect(r.lines[0].raw).toContain('09:52 API | 2.70 (13% under) | £240');
+  });
+
+  it('drops a trailing empty cell left by a trailing tab', () => {
+    const r = parsePlainSlip('11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\t3.10\t\n09:52 API\t2.70 (13% under)\t£240\t');
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+  });
+});
+
+describe('B: plain text without tabs', () => {
+  it('still reads the email\'s own form with asterisks', () => {
+    const r = parsePlainSlip(PLAIN);
+    expect(r.mapped).toBe('asterisks');
+    expect(r.lines).toHaveLength(3);
+    expect(r.lines[0].cells).toEqual(DOVE);
+  });
+
+  it('accepts any HH:MM before API', () => {
+    const r = parsePlainSlip('11:35 Newmarket *Dove Tale* 2.88 B3, SI 2.75 3.10\n09:52 API *2.70* (13% under) £240');
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+  });
+
+  it('does not guess at the two real lines without tabs or asterisks: flagged, shown, counted', () => {
+    const r = parsePlainSlip('11:35 Newmarket Dove Tale 2.88 B3, SI 2.75 3.10\n09:52 API 2.70 (13% under) £240');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(false);
+    expect(r.lines[0].flag).toBe('first line did not read');
+    expect(r.lines[0].raw).toBe('11:35 Newmarket Dove Tale 2.88 B3, SI 2.75 3.10\n09:52 API 2.70 (13% under) £240');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The real paste of 30 October 2026, 15:13 UK, read from the "What was pasted"
+// diagnostics: Gmail in Safari 27.2 on a Mac, the 10:00 slip. The clipboard
+// carried text/html (148,852 chars) and text/plain (2,776 chars). The HTML
+// table had no header row, which is why 0.2.0 fell back to the text and read
+// nothing; the text was tab separated, five cells then an API line of three.
+
+import { REAL_PLAIN_1000, REAL_PLAIN_1000_SELECTIONS } from './fixtures/real-2026-10-30-slip-1000.js';
+
+// The real markup of the first row's td cells, verbatim from the diagnostics
+// (the diagnostics stop at 4000 characters, inside the sixth cell; the sixth
+// and seventh cells here carry the same style and the email's own markup for
+// a lay target and a cap). Safari writes its "Apple-converted-space" as a
+// no-break space.
+const SAFARI_TD =
+  '<td style="margin: 0px; padding: 6px 8px; border-bottom: 1px solid rgb(227, 227, 227); font-style: normal; font-variant-caps: normal; font-weight: normal; font-width: normal; font-size: 13px; line-height: normal; font-family: Arial, sans-serif; font-size-adjust: none; font-kerning: auto; font-variant-alternates: normal; font-variant-ligatures: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; font-feature-settings: normal; font-optical-sizing: auto; font-variation-settings: normal; vertical-align: top;">';
+const NBSP = '<span class="Apple-converted-space"> </span>';
+const SAFARI_ROW =
+  `${SAFARI_TD}11:35 Newmarket</td>` +
+  `${SAFARI_TD}<b>Dove Tale</b></td>` +
+  `${SAFARI_TD}2.88${NBSP}<span style="color: rgb(119, 119, 119);">B3, SI</span></td>` +
+  `${SAFARI_TD}2.75</td>` +
+  `${SAFARI_TD}3.10${NBSP}<br><span style="color: rgb(119, 119, 119); font-size: 11px;">09:52 API</span></td>` +
+  `${SAFARI_TD}<b>2.70</b>${NBSP}<span style="color: rgb(119, 119, 119);">(13% under)</span></td>` +
+  `${SAFARI_TD}£240</td>`;
+const SAFARI_HTML =
+  '<head><meta charset="UTF-8"></head><table style="font-style: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration: none; caret-color: rgb(34, 34, 34); color: rgb(34, 34, 34); font-family: Arial, sans-serif; font-size: 14px; background-color: rgb(255, 255, 255); border-collapse: collapse; width: 1027.984375px;"><tbody>' +
+  `<tr>${SAFARI_ROW}</tr>` +
+  '</tbody></table>';
+
+describe('the real paste from Gmail in Safari, 30 October 2026', () => {
+  it('is the text the diagnostics reported, to the character', () => {
+    expect(REAL_PLAIN_1000.length).toBe(2776);
+    expect(REAL_PLAIN_1000_SELECTIONS).toBe(34);
+  });
+
+  it('reads all 34 selections from the tab separated text, none flagged, nothing in the note', () => {
+    const r = parsePlainSlip(REAL_PLAIN_1000);
+    expect(r.mapped).toBe('tabs');
+    expect(r.lines).toHaveLength(34);
+    expect(r.lines.filter((l) => !l.parsed)).toEqual([]);
+    expect(r.note).toBe('');
+    expect(r.lines.every((l) => l.derived.betfairTime === '09:52 API')).toBe(true);
+    expect(r.lines.every((l) => /^\d{2}:\d{2} [A-Z]/.test(l.cells.race))).toBe(true);
+  });
+
+  it('keeps the real cells as they arrived, codes included', () => {
+    const r = parsePlainSlip(REAL_PLAIN_1000);
+    const by = (horse) => r.lines.find((l) => l.cells.horse === horse);
+    expect(by('Dove Tale').cells).toEqual(REAL_DOVE);
+    expect(by('Ash Hobbs').cells).toEqual({
+      race: '14:00 Down Royal',
+      horse: 'Ash Hobbs',
+      bestPrice: '3.75 10bet, Betano',
+      bestBog: '3.75',
+      betfair: '4.60\n09:52 API',
+      layTarget: '4.00 (13% under)',
+      betfairCap: '£25',
+    });
+    expect(by('Ash Hobbs').derived.codes).toEqual(['10bet', 'Betano']);
+    expect(by('No Hard Feelings').cells).toEqual({
+      race: '15:20 Uttoxeter',
+      horse: 'No Hard Feelings',
+      bestPrice: 'no price read',
+      bestBog: '–',
+      betfair: '–\n09:52 API',
+      layTarget: '–',
+      betfairCap: '£140',
+    });
+    expect(by('October Hill').cells.bestPrice).toBe('no price read');
+    expect(by('October Hill').derived.codes).toEqual([]);
+    expect(by('Wearing Stars').cells.betfair).toBe('2.16 ⚠ check\n09:52 API');
+    expect(by('Wearing Stars').derived.betfairCheck).toBe(true);
+    expect(by('Wearing Stars').derived.codes).toEqual(['10bet', 'B3']);
+    expect(by('Pequenita').derived.codes).toEqual(['WH']);
+    expect(by('Serenity Blue').cells.betfairCap).toBe('£25');
+    expect(r.lines[33].cells.horse).toBe('Serenity Blue');
+  });
+
+  it('reads the real Safari table markup by position, with the no-break spaces and the line break', () => {
+    const r = parseHtmlSlip(SAFARI_HTML);
+    expect(r.mapped).toBe('position');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+    expect(r.lines[0].derived.codes).toEqual(['B3', 'SI']);
+    expect(r.note).toBe('');
+  });
+
+  it('takes the HTML first when the clipboard has both, as it did', () => {
+    const r = parseSlip({ html: SAFARI_HTML, text: REAL_PLAIN_1000 });
+    expect(r.source).toBe('html');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].cells).toEqual(REAL_DOVE);
+  });
+});

@@ -2,6 +2,57 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.3.1] — 2026-10-30 — parsers for the real browser copy (B)
+
+Checked against the real paste of 15:13 UK on 30 October 2026 (Gmail in Safari
+27.2 on a Mac, the 10:00 slip), read from the "What was pasted" diagnostics:
+text/html of 148,852 characters and text/plain of 2,776. The HTML table had no
+header row, which is why 0.2.0 found no table and fell back to the text. The
+text was tab separated, five cells then an API line of three, exactly the shape
+assumed here. That text is kept as a fixture, to the character.
+
+### Changed
+- HTML path: a header row is used when present, as before. Without one, the
+  table with the most rows of exactly seven cells is read and the cells are
+  mapped by position: Race, Horse, Best price, Best BOG, Betfair, Lay target,
+  Betfair cap. A row of another length is flagged "N cells, expected 7". A
+  seven cell row whose first cell is not a race time (most likely a header
+  row with other names) is flagged, not read as a bet. Line breaks inside a
+  cell, whether `<br>` or block elements, are kept. Each result says how it
+  was mapped (header or position).
+- Plain text path with tabs: cells split on tabs; trailing empty cells from a
+  trailing tab are dropped; a line whose first cell is a time and a course
+  starts a row; five cells then an API line of three are joined, with the
+  Betfair cell carrying its line break; seven cells on one line are a complete
+  row; anything else is flagged with the counts seen and shown with the tabs
+  as " | ". Asterisks round the horse or the lay target are optional. Header
+  and rules lines become the note.
+- Plain text path without tabs: unchanged, the email's own form with the
+  horse between asterisks. Without tabs and without asterisks nothing is
+  guessed: flagged "first line did not read" and shown.
+- Any HH:MM before "API" was already accepted; now tested with 09:52.
+
+### Tests
+- Seventeen more: seven cells by position reading the same cells as the
+  header, the header still preferred, a line break inside a cell written as
+  divs, a six cell row flagged, a header with other names not read as a bet,
+  the seven cell table inside a layout table, null without either; the two
+  real lines tab separated, with and without asterisks, several selections
+  including the no price read and check rows with the new code UN, seven
+  cells on one line, a first line with no API line flagged, a pair with the
+  counts off flagged, a trailing tab; and without tabs the asterisk form
+  still read, 09:52 accepted, and the two real lines flagged and shown.
+- From the real paste: the fixture is the diagnostics' text to the character
+  (2,776); all 34 selections read with none flagged and nothing in the note;
+  Dove Tale, Ash Hobbs (codes 10bet and Betano, course Down Royal), No Hard
+  Feelings and October Hill (no price read), Wearing Stars (the check, codes
+  10bet and B3), Pequenita, Serenity Blue cell by cell; the real Safari table
+  markup of the first row, with its no-break spaces and the line break, read
+  by position; and the HTML taken first when both types arrive.
+
+### Recorded
+- A second new bookmaker code in real data, 10bet. Shown as it arrives.
+
 ## [0.3.0] — 2026-10-30 — placed and not placed, the form, counters, history (step 3)
 
 ### Added

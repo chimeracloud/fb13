@@ -22,6 +22,7 @@ own, so this version is a worksheet and not yet the record.
 | 2 | Paste, parse and show the lines | Pushed 30 October 2026, 0.2.0; Pages build passed; live |
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Committed locally, 0.3.0, held until the diagnostics are read |
+| B | Parsers for the real browser copy: seven cells by position, tab separated text | Committed locally, 0.3.1, checked against the real paste of 15:13 UK, 30 October 2026; awaiting the word to push |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -32,11 +33,17 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 - Two fields above the paste box: slot (08:00, 09:00 or 10:00 UK) and date.
   The date defaults to today in Europe/London, whatever the device's zone.
 - A paste box. Copy the table from Mark's Early Doors email and paste it. The
-  page reads the clipboard's HTML, finds the table and maps the columns by
-  their header text. If there is no table it falls back to the email's plain
-  text form, where each selection runs over two lines (the first starting with
-  the race time and course, the second with "07:52 API") and the pair is joined
-  into one row.
+  page reads the clipboard's HTML and finds the table: by its header row when
+  one is present, otherwise by rows of exactly seven cells mapped by position
+  (Race, Horse, Best price, Best BOG, Betfair, Lay target, Betfair cap). A line
+  break inside a cell is kept. If there is no table it falls back to the plain
+  text. With tabs (a browser copy of the table) cells split on tabs: the first
+  line of a selection ends with the Betfair price and the second begins with
+  the API time and holds the lay target and the cap, and the pair is joined.
+  Without tabs only the email's own plain text form is read, where the horse
+  sits between asterisks. Anything else is flagged and shown, not guessed. Any
+  HH:MM is accepted before "API": the 10:00 slip reads at 09:52, the 09:00 at
+  08:52.
 - Every parsed line is shown for the person to check, with a count. A line
   that cannot be read is shown as it is and flagged. Nothing is dropped and
   nothing is guessed. Each paste is kept as a group with the time it was pasted
@@ -72,9 +79,9 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
 - It places no bet, logs in nowhere, scrapes nothing and holds no credential.
 - It does not decode the bookmaker codes on the slip (B3, WH, LD, CE, BY, FB,
-  SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN, seen in real data on 30
-  October 2026). They are shown exactly as they arrive. Charles holds the
-  mapping.
+  SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN and 10bet, seen in real
+  data on 30 October 2026). They are shown exactly as they arrive. Charles
+  holds the mapping.
 - It sends nothing anywhere: no analytics, no third party script, no CDN, no
   fonts fetched. The only requests are for its own files.
 - It never edits or deletes a history entry.
@@ -96,9 +103,11 @@ Lay target, Betfair cap.
 | Lay target | A bold price and `(13% under)` or `(5% under)`; or `–` | Text |
 | Betfair cap | A pound amount, `£240` | Text |
 
-Columns are matched by header text, so their order does not matter. A row with
-a different number of cells, or a table missing one of the seven headers, is
-flagged and shown raw.
+Columns are matched by header text when a header row is present, so their
+order does not matter. Without a header they are taken in the order above. A
+row with a different number of cells, a table missing one of the seven headers,
+or, without a header, a row whose first cell is not a race time, is flagged and
+shown raw.
 
 ## Where it runs
 
@@ -145,12 +154,13 @@ Node 22 build is 22.23.4 as of 30 October 2026.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0, and the page says so.
-- **Plain text paste.** The fallback parser handles the email's own plain
-  text shape (two lines per selection, the horse between asterisks). A browser
-  copy from Gmail has no asterisks and, probably, tab separated cells; the
-  first real paste read nothing. The diagnostics section exists to settle the
-  real shape before the parser is changed. Flagged rows are shown raw, never
-  guessed.
+- **The clipboard's shape.** Confirmed from the real paste of 30 October 2026
+  (Gmail in Safari 27.2 on a Mac): both text/html and text/plain arrive; the
+  HTML table has no header row, so the cells are read by position; the text is
+  tab separated, five cells on the first line and three on the API line. Mail
+  on an iPhone has not yet been tried and may hand the page something else.
+  The "What was pasted" section will show it. Flagged rows are shown raw,
+  never guessed.
 
 ## Repository layout
 
@@ -165,6 +175,7 @@ src/diagnostics.js    what the last paste handed the page, as text
 src/dates.js          today and now in Europe/London
 src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build
+src/fixtures/         real pastes, kept as fixtures; nothing invented
 docs/status/latest.md status, overwritten whenever the unit reports (CHI-POL-053)
 reference/            read-only clones (the Bible), never committed
 ```
