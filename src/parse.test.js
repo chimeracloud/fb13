@@ -589,3 +589,104 @@ describe('the second real paste from Gmail in Safari, 30 October 2026', () => {
     expect(r.lines[0].derived.codes).toEqual(['SI', 'SX']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// The third real paste, 1 November 2026, 22:42 UK, same browser, the 08:00
+// slip: text/html 123,127 chars, text/plain 2,305 chars. The first real browser
+// copy of the 08:00 slip (API time 07:52), and the check marker inside the
+// Betfair cell of a tab separated row.
+
+import { REAL_PLAIN_2242, REAL_PLAIN_2242_SELECTIONS } from './fixtures/real-2026-11-01-2242-slip-0800.js';
+
+describe('the third real paste from Gmail in Safari, 1 November 2026, the 08:00 slip', () => {
+  it('is the text the diagnostics reported, to the character', () => {
+    expect(REAL_PLAIN_2242.length).toBe(2305);
+    expect(REAL_PLAIN_2242_SELECTIONS).toBe(28);
+  });
+
+  it('reads all 28 selections, none flagged, nothing in the note, 07:52 on every line', () => {
+    const r = parsePlainSlip(REAL_PLAIN_2242);
+    expect(r.mapped).toBe('tabs');
+    expect(r.lines).toHaveLength(28);
+    expect(r.lines.filter((l) => !l.parsed)).toEqual([]);
+    expect(r.note).toBe('');
+    expect(r.lines.every((l) => l.derived.betfairTime === '07:52 API')).toBe(true);
+    expect(r.lines[0].cells.horse).toBe('Choctaw Nation');
+    expect(r.lines[27].cells.horse).toBe('Thread Of Gold');
+  });
+
+  it('keeps the check marker inside the Betfair cell and marks that row for a look, not as unread', () => {
+    const r = parsePlainSlip(REAL_PLAIN_2242);
+    const west = r.lines.find((l) => l.cells.horse === 'West Away');
+    expect(west.parsed).toBe(true);
+    expect(west.cells).toEqual({
+      race: '13:40 Cork',
+      horse: 'West Away',
+      bestPrice: '3.75 FR',
+      bestBog: '3.50',
+      betfair: '2.90 ⚠ check\n07:52 API',
+      layTarget: '2.52 (13% under)',
+      betfairCap: '£55',
+    });
+    expect(west.derived.betfairCheck).toBe(true);
+    expect(west.derived.betfairTime).toBe('07:52 API');
+    expect(west.derived.codes).toEqual(['FR']);
+    expect(r.lines.filter((l) => l.derived.betfairCheck).map((l) => l.cells.horse)).toEqual(['West Away']);
+  });
+
+  it('reads the rest as it arrived: the first and last rows, codes, a one word horse', () => {
+    const r = parsePlainSlip(REAL_PLAIN_2242);
+    const by = (horse) => r.lines.find((l) => l.cells.horse === horse);
+    expect(by('Choctaw Nation').cells).toEqual({
+      race: '12:17 Curragh',
+      horse: 'Choctaw Nation',
+      bestPrice: '1.67 BY, CE',
+      bestBog: '1.67',
+      betfair: '1.85\n07:52 API',
+      layTarget: '1.75 (5% under)',
+      betfairCap: '£125',
+    });
+    expect(by('Choctaw Nation').derived.codes).toEqual(['BY', 'CE']);
+    expect(by('Lennon Grove').derived.codes).toEqual(['B3', 'BetMGM']);
+    expect(by('Paggane').derived.codes).toEqual(['Betano', 'BTT']);
+    expect(by('Code Name Cubitt').derived.codes).toEqual(['WH']);
+    expect(by('Meetmebythelake').cells.race).toBe('16:10 Carlisle');
+    expect(by('Thread Of Gold').cells).toEqual({
+      race: '16:20 Curragh',
+      horse: 'Thread Of Gold',
+      bestPrice: '2.88 CE, LD',
+      bestBog: '2.88',
+      betfair: '2.76\n07:52 API',
+      layTarget: '2.40 (13% under)',
+      betfairCap: '£125',
+    });
+  });
+
+  it('reads the real Safari markup of its first row by position', () => {
+    // The first five cells verbatim from the diagnostics; the last two carry the
+    // same style and the email's own markup, as in the earlier Safari tests.
+    const row =
+      `${SAFARI_TD}12:17 Curragh</td>` +
+      `${SAFARI_TD}<b>Choctaw Nation</b></td>` +
+      `${SAFARI_TD}1.67${NBSP}<span style="color: rgb(119, 119, 119);">BY, CE</span></td>` +
+      `${SAFARI_TD}1.67</td>` +
+      `${SAFARI_TD}1.85${NBSP}<br><span style="color: rgb(119, 119, 119); font-size: 11px;">07:52 API</span></td>` +
+      `${SAFARI_TD}<b>1.75</b>${NBSP}<span style="color: rgb(119, 119, 119);">(5% under)</span></td>` +
+      `${SAFARI_TD}£125</td>`;
+    const r = parseHtmlSlip(`<head><meta charset="UTF-8"></head><table style="border-collapse: collapse; width: 1027.984375px;"><tbody><tr>${row}</tr></tbody></table>`);
+    expect(r.mapped).toBe('position');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[0].cells).toEqual({
+      race: '12:17 Curragh',
+      horse: 'Choctaw Nation',
+      bestPrice: '1.67 BY, CE',
+      bestBog: '1.67',
+      betfair: '1.85\n07:52 API',
+      layTarget: '1.75 (5% under)',
+      betfairCap: '£125',
+    });
+    expect(r.lines[0].derived.betfairTime).toBe('07:52 API');
+    expect(r.lines[0].derived.codes).toEqual(['BY', 'CE']);
+  });
+});

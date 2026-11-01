@@ -22,7 +22,7 @@ own, so this version is a worksheet and not yet the record.
 | 2 | Paste, parse and show the lines | Pushed 30 October 2026, 0.2.0; Pages build passed; live |
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
-| B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against the real pastes of 15:13 and 15:48 UK |
+| B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
 | 4 | Export, worksheet notice | |
 | 5 | Tests from the real fixtures run in the Pages build | |
 
@@ -156,10 +156,12 @@ Node 22 build is 22.23.4 as of 30 October 2026.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0, and the page says so.
-- **The clipboard's shape.** Confirmed from the real paste of 30 October 2026
-  (Gmail in Safari 27.2 on a Mac): both text/html and text/plain arrive; the
-  HTML table has no header row, so the cells are read by position; the text is
-  tab separated, five cells on the first line and three on the API line. Mail
+- **The clipboard's shape.** Confirmed from three real pastes, 30 October and
+  1 November 2026 (Gmail in Safari 27.2 on a Mac, the 10:00 and 08:00 slips):
+  both text/html and text/plain arrive; the HTML table has no header row, so
+  the cells are read by position; the text is tab separated, five cells on the
+  first line and three on the API line, and the check marker travels inside
+  the Betfair cell. Mail
   on an iPhone has not yet been tried and may hand the page something else.
   The "What was pasted" section will show it. Flagged rows are shown raw,
   never guessed.

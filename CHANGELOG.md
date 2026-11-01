@@ -2,6 +2,22 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.3.3] — 2026-11-02 — the third real paste as a fixture
+
+### Tests
+- The text of the third real paste (1 November 2026, 22:42 UK, same browser,
+  the 08:00 slip: Curragh, Huntingdon, Cork, Carlisle, Worcester) kept to the
+  character (2,305) and read: 28 selections, none flagged, nothing in the
+  note, 07:52 API on every line; West Away's Betfair cell "2.90 ⚠ check" kept
+  with its line break and marked for a look, the only such row; Choctaw Nation
+  and Thread Of Gold cell by cell; the codes BY, CE; B3, BetMGM; Betano, BTT;
+  WH; the real Safari markup of its first row read by position.
+
+### Recorded
+- The first real browser copy of the 08:00 slip. The same shape as the 10:00
+  slip's: no header row in the HTML table, tab separated text, five cells then
+  an API line of three. No new bookmaker code in it.
+
 ## [0.3.2] — 2026-10-30 — the second real paste as a fixture
 
 ### Tests
