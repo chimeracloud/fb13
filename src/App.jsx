@@ -3,6 +3,7 @@ import { todayInLondon } from './dates.js';
 import { parseSlip, manualLine, newId, COLUMNS, COLUMN_LABELS } from './parse.js';
 import { loadState, saveState } from './storage.js';
 import { buildDiagnostics, diagnosticsText } from './diagnostics.js';
+import { entriesToCsv, entriesToJson, exportFilename, downloadText } from './export.js';
 import {
   WHERE_OTHER,
   SIDES,
@@ -231,6 +232,8 @@ export default function App() {
             ))}
           </p>
         )}
+
+        <ExportPanel entries={state.entries} lines={state.lines} />
       </main>
 
       <footer>
@@ -242,6 +245,58 @@ export default function App() {
         <p className="tag">Born from complexity. Engineered for certainty.</p>
       </footer>
     </div>
+  );
+}
+
+function ExportPanel({ entries, lines }) {
+  const [note, setNote] = useState(null);
+  const n = entries.length;
+
+  function exportAs(ext) {
+    const now = new Date();
+    const csv = ext === 'csv';
+    const text = csv ? entriesToCsv(entries, lines) : entriesToJson(entries, lines, now);
+    const type = csv ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8';
+    const filename = exportFilename(ext, now);
+    try {
+      downloadText({ filename, text, type });
+      setNote({
+        kind: 'ok',
+        text: `Saved ${filename} to this device, ${plural(n, 'entry', 'entries')}. Nothing was sent anywhere.`,
+      });
+    } catch (err) {
+      setNote({
+        kind: 'warn',
+        text: `The browser did not save the file${err && err.message ? `: ${err.message}` : ''}.`,
+      });
+    }
+  }
+
+  return (
+    <section className="export" aria-label="Export">
+      <h2>Export</h2>
+      <p>
+        Every entry on every date, as a file saved to this device. Each row carries the date, the
+        slot and the mode. {n ? `${plural(n, 'entry', 'entries')} so far.` : 'Nothing recorded yet.'}
+      </p>
+      <div className="actions">
+        <button type="button" className="primary" disabled={!n} onClick={() => exportAs('csv')}>
+          Export CSV
+        </button>
+        <button type="button" disabled={!n} onClick={() => exportAs('json')}>
+          Export JSON
+        </button>
+      </div>
+      <p className="worksheet">
+        Worksheet, not yet the record. This browser is the only store, and the export is the only
+        way out.
+      </p>
+      {note && (
+        <p className={`message ${note.kind}`} role="status">
+          {note.text}
+        </p>
+      )}
+    </section>
   );
 }
 

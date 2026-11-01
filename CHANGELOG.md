@@ -2,6 +2,39 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.4.0] — 2026-11-02 — export (step 4)
+
+### Added
+- `src/export.js`: every entry as CSV and as JSON, each row carrying the date,
+  the slot and the mode. The CSV is UTF-8 with a byte order mark, so a
+  spreadsheet reads the £ and the ⚠, quoted per RFC 4180 with CRLF between
+  rows; its columns in reading order: date, slot, race, horse, kind, mode,
+  where, where kind, side, price, stake, BOG, the time placed, how, reference,
+  recorded at (UK time and UTC), the other five cells of the line, the line's
+  flag, the entry id and the line id. A not placed entry carries no mode,
+  because none was stated. The JSON carries the page name, its version, the
+  time of export (UTC and UK), the worksheet notice, the count, and each entry
+  with its whole line embedded. The file is made in the browser and saved to
+  the device through an anchor with a download name, by an object URL or,
+  where a browser has none, a data URL. Nothing is sent anywhere.
+- The page: an Export section at the foot with Export CSV and Export JSON, the
+  count of entries, and the worksheet notice beside the buttons. Both buttons
+  are disabled until there is an entry. The filename carries the UK date and
+  time of the export, `fb13-entries-YYYY-MM-DD-HHMM.csv` or `.json`. The
+  section says what was saved, or that the browser refused.
+- Tests, eleven: CSV quoting (comma, quote, line break, CRLF, empty, missing,
+  a number); the header; a placed entry and a not placed entry on the real
+  Dove Tale and No Hard Feelings rows field by field, with the Betfair cell's
+  line break kept inside quotes and the empty mode on not placed; an edit
+  following the entry it corrects; an entry whose line is not on the page,
+  flagged; the header alone with no entries; the JSON object and its
+  round trip, the missing line as null; the filename in UK time either side
+  of the clock change; and the download helper against a fake document.
+
+### Step 5
+- Tests have been written alongside each step from the real fixtures and run
+  in every Pages build before `vite build`. 81 in all with this version.
+
 ## [0.3.3] — 2026-11-02 — the third real paste as a fixture
 
 ### Tests

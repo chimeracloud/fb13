@@ -1,7 +1,7 @@
 {
   "name": "fb13-trade-slip",
   "private": true,
-  "version": "0.3.3",
+  "version": "0.4.0",
   "type": "module",
   "description": "FB13 trade slip, version 0. Records what a person did elsewhere. Places nothing.",
   "scripts": {

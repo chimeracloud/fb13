@@ -614,3 +614,35 @@ pre.diag {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ---- step 4: export ---- */
+
+.export {
+  margin: 20px 0 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.export h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.export p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.export .worksheet {
+  margin: 10px 0 0;
+  color: var(--cream);
+}
+
+.export .message {
+  margin: 10px 0 0;
+}

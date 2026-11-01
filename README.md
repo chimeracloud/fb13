@@ -23,8 +23,8 @@ own, so this version is a worksheet and not yet the record.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
-| 4 | Export, worksheet notice | |
-| 5 | Tests from the real fixtures run in the Pages build | |
+| 4 | Export, worksheet notice | Built 2 November 2026, 0.4.0; local, not yet pushed |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 81 tests, run by every Pages build before `vite build` |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -72,8 +72,16 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   line is. A line's state is its latest entry. An edit is a new entry, never an
   overwrite, and each line's history stays visible under the line, newest
   first, with the UK time it was recorded.
-- Export downloads every entry as CSV and JSON, each row carrying the slot, the
-  date and the mode. (Step 4.)
+- Export, at the foot of the page: Export CSV and Export JSON each save a file
+  to the device with every entry on every date. Each CSV row carries the date,
+  the slot, the race and horse, the kind (placed or not placed), the mode,
+  where, side, price, stake, BOG, the time placed, how, the reference, the UK
+  time and the UTC instant it was recorded, the line's other five cells and
+  its flag. A not placed entry carries no mode, because none was stated. The
+  JSON carries the same entries with the whole line embedded, the page version
+  and the time of export. The file is made in the browser and saved to the
+  device; nothing is sent anywhere. The worksheet notice sits beside the
+  buttons: this browser is the only store, and the export is the only way out.
 
 ## What it does not do
 
@@ -171,11 +179,12 @@ Node 22 build is 22.23.4 as of 30 October 2026.
 ```
 index.html            the one page
 src/main.jsx          mounts the app
-src/App.jsx           the page: paste box, lines, add line
+src/App.jsx           the page: paste box, lines, the form, history, export
 src/parse.js          the slip parser, both paths, pure functions
 src/entries.js        the placed form's defaults and checks, append-only entries, counters
 src/storage.js        browser storage, every call in try/catch
 src/diagnostics.js    what the last paste handed the page, as text
+src/export.js         every entry as CSV and JSON, and the download to the device
 src/dates.js          today and now in Europe/London
 src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build
