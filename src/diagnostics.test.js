@@ -80,4 +80,22 @@ describe('what a paste handed the page', () => {
     expect(none).toContain('none handed to the page');
     expect(none).toContain('(empty)');
   });
+
+  it('says on its first line which build took the paste', () => {
+    const d = buildDiagnostics({ types: [], data: {}, html: '', text: '', build: { version: '0.4.1', commit: '7642519' } });
+    expect(d.build).toEqual({ version: '0.4.1', commit: '7642519' });
+    expect(diagnosticsText(d).split('\n')[0]).toBe('FB13 paste diagnostics, version 0.4.1, commit 7642519');
+    const noHash = buildDiagnostics({ types: [], data: {}, html: '', text: '', build: { version: '0.4.1', commit: '' } });
+    expect(noHash.build).toEqual({ version: '0.4.1', commit: '' });
+    expect(diagnosticsText(noHash).split('\n')[0]).toBe('FB13 paste diagnostics, version 0.4.1, no commit hash');
+  });
+
+  it('says when the build was not recorded: diagnostics kept from before 0.4.1, or none given', () => {
+    const d = buildDiagnostics({ types: [], data: {}, html: '', text: '' });
+    expect(d.build).toBeNull();
+    expect(diagnosticsText(d).split('\n')[0]).toBe('FB13 paste diagnostics, build not recorded');
+    const kept = { ...d };
+    delete kept.build;
+    expect(diagnosticsText(kept).split('\n')[0]).toBe('FB13 paste diagnostics, build not recorded');
+  });
 });

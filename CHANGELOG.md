@@ -2,6 +2,28 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.4.1] — 2026-11-02 — the version and the commit on the page
+
+### Why
+Three real pastes in a row left one question open: which version was live
+when the paste was made. Now the page and the paste both say.
+
+### Added
+- `src/build.js`: the version from `package.json`, and the short commit hash
+  Cloudflare Pages hands every build as `CF_PAGES_COMMIT_SHA`, stamped in by
+  `vite.config.js` through Vite's `define`. Nothing to set in Pages. Outside a
+  Pages build the hash is empty and the page says "no commit hash" rather than
+  inventing one.
+- The footer: "FB13 trade slip, version 0.4.1, commit 7642519."
+- The diagnostics carry the build that took the paste. The first line of the
+  copied text reads "FB13 paste diagnostics, version 0.4.1, commit 7642519",
+  and the panel's first line says the same after the time and the source.
+  Diagnostics kept in the browser from an earlier version say "build not
+  recorded".
+- Tests, five: the version matches `package.json`, the hash is seven hex
+  characters or empty, the label in words; the diagnostics' first line with a
+  build, without a hash, and from before the build was recorded.
+
 ## [0.4.0] — 2026-11-02 — export (step 4)
 
 ### Added

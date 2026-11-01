@@ -1,6 +1,8 @@
 // What a paste handed the page, so that a parser failure can be read rather
 // than guessed at. Nothing here leaves the page: the person copies it out.
 
+import { buildLabel } from './build.js';
+
 export const HTML_SAMPLE_LIMIT = 4000;
 
 /** Tabs as →, carriage returns as ␍, line feeds as ¶ followed by a real break. */
@@ -14,7 +16,7 @@ export function markWhitespace(s) {
 /**
  * types: the DataTransfer's types list. data: each type to the string getData
  * returned. html and text: what the parser was given. source: 'paste event' or
- * 'read box'.
+ * 'read box'. build: the version and commit of the page that took the paste.
  */
 export function buildDiagnostics({
   at = new Date().toISOString(),
@@ -24,12 +26,14 @@ export function buildDiagnostics({
   html = '',
   text = '',
   userAgent = '',
+  build = null,
 }) {
   const htmlStr = String(html ?? '');
   const textStr = String(text ?? '');
   return {
     at,
     source,
+    build: build && build.version ? { version: String(build.version), commit: String(build.commit || '') } : null,
     userAgent: String(userAgent ?? ''),
     items: Array.from(types).map((t) => ({ type: String(t), length: String(data[t] ?? '').length })),
     textLength: textStr.length,
@@ -44,7 +48,7 @@ export function buildDiagnostics({
 export function diagnosticsText(d) {
   if (!d) return 'No paste yet.';
   const lines = [
-    'FB13 paste diagnostics',
+    `FB13 paste diagnostics, ${buildLabel(d.build)}`,
     `at: ${d.at}`,
     `source: ${d.source}`,
     `user agent: ${d.userAgent || 'not known'}`,

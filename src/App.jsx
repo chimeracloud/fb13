@@ -3,6 +3,7 @@ import { todayInLondon } from './dates.js';
 import { parseSlip, manualLine, newId, COLUMNS, COLUMN_LABELS } from './parse.js';
 import { loadState, saveState } from './storage.js';
 import { buildDiagnostics, diagnosticsText } from './diagnostics.js';
+import { BUILD, buildLabel } from './build.js';
 import { entriesToCsv, entriesToJson, exportFilename, downloadText } from './export.js';
 import {
   WHERE_OTHER,
@@ -242,6 +243,7 @@ export default function App() {
           nothing is sent anywhere. An entry is never edited or deleted: a correction is a new
           entry, and the history stays.
         </p>
+        <p className="build">FB13 trade slip, {buildLabel(BUILD)}.</p>
         <p className="tag">Born from complexity. Engineered for certainty.</p>
       </footer>
     </div>
@@ -349,6 +351,7 @@ function PasteBox({ onPaste, onDiagnostics }) {
         html,
         text,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        build: BUILD,
       }),
     );
     if (!html && !text) return; // let the browser paste; the person taps Read box
@@ -373,6 +376,7 @@ function PasteBox({ onPaste, onDiagnostics }) {
         html: el.innerHTML,
         text: el.innerText,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        build: BUILD,
       }),
     );
     const ok = onPaste({ html: el.innerHTML, text: el.innerText });
@@ -780,8 +784,8 @@ function DiagnosticsPanel({ diagnostics }) {
       {diagnostics ? (
         <>
           <p className="sub">
-            Last paste at {diagnostics.at}, via {diagnostics.source}. Shown as text, never rendered.
-            Nothing here leaves this page.
+            Last paste at {diagnostics.at}, via {diagnostics.source}, {buildLabel(diagnostics.build)}.
+            Shown as text, never rendered. Nothing here leaves this page.
           </p>
           <table className="diag-types">
             <thead>

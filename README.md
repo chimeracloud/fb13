@@ -23,8 +23,9 @@ own, so this version is a worksheet and not yet the record.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
-| 4 | Export, worksheet notice | Built 2 November 2026, 0.4.0; local, not yet pushed |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 81 tests, run by every Pages build before `vite build` |
+| 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0 |
+| 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1 |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 86 tests, run by every Pages build before `vite build` |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -82,6 +83,11 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   and the time of export. The file is made in the browser and saved to the
   device; nothing is sent anywhere. The worksheet notice sits beside the
   buttons: this browser is the only store, and the export is the only way out.
+- The footer names the build: "FB13 trade slip, version 0.4.1, commit
+  7642519." The diagnostics carry the build that took the paste, on the first
+  line of the copied text and of the panel, so a paste always says which
+  version read it. The hash is the one Cloudflare Pages hands the build;
+  outside a Pages build the page says "no commit hash".
 
 ## What it does not do
 
@@ -137,7 +143,9 @@ Pages settings:
 
 The build runs the tests first (`vitest run`), so a failing test fails the
 deploy. Pages installs dependencies itself before the build command. Nothing is
-built or tested on Charles's machine.
+built or tested on Charles's machine. Pages also hands the build the commit it
+is building as `CF_PAGES_COMMIT_SHA`; `vite.config.js` stamps its first seven
+characters into the page. Nothing to set.
 
 ## Dependencies
 
@@ -186,6 +194,7 @@ src/storage.js        browser storage, every call in try/catch
 src/diagnostics.js    what the last paste handed the page, as text
 src/export.js         every entry as CSV and JSON, and the download to the device
 src/dates.js          today and now in Europe/London
+src/build.js          the version and the short commit hash stamped into the page
 src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build
 src/fixtures/         real pastes, kept as fixtures; nothing invented
