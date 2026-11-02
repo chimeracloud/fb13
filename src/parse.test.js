@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseHtmlSlip, parsePlainSlip, parseSlip, manualLine, codesFromBestPrice } from './parse.js';
+import { parseHtmlSlip, parsePlainSlip, parseSlip, manualLine, codesFromBestPrice, extractDecision, extractedLabel } from './parse.js';
 
 // Real fixtures from Mark's Early Doors email of 30 October 2026, trimmed.
 // Nothing here is invented. Build every test from these.
@@ -366,7 +366,7 @@ describe('B: plain text with tabs, a browser copy of the table', () => {
     const r = parsePlainSlip('11:35 Newmarket\tDove Tale\t2.88 B3, SI\t2.75\t3.10\n19:00 Dundalk\tWearing Stars\t2.50 B3, UN\t2.50\t2.02\n09:52 API\t1.76 (13% under)\t£25');
     expect(r.lines).toHaveLength(2);
     expect(r.lines[0].parsed).toBe(false);
-    expect(r.lines[0].flag).toBe('5 cells, expected 7 on one line or 5 then an API line of 3');
+    expect(r.lines[0].flag).toBe('5 cells, expected 7 or 6 on one line, or 5 then an API line of 3');
     expect(r.lines[0].raw).toBe('11:35 Newmarket | Dove Tale | 2.88 B3, SI | 2.75 | 3.10');
     expect(r.lines[1].parsed).toBe(true);
   });
@@ -688,5 +688,120 @@ describe('the third real paste from Gmail in Safari, 1 November 2026, the 08:00 
     });
     expect(r.lines[0].derived.betfairTime).toBe('07:52 API');
     expect(r.lines[0].derived.codes).toEqual(['BY', 'CE']);
+  });
+});
+
+import { REAL_PLAIN_0740, REAL_PLAIN_0740_SELECTIONS } from './fixtures/real-2026-11-02-0740-slip-0800.js';
+
+describe('the fourth real paste from Gmail in Safari, 2 November 2026: the six-cell layout', () => {
+  it('is the text the diagnostics reported, to the character', () => {
+    expect(REAL_PLAIN_0740.length).toBe(2193);
+    expect(REAL_PLAIN_0740_SELECTIONS).toBe(22);
+  });
+
+  it('reads all 22 selections as six-cell lines, none flagged, nothing in the note, every cell verbatim', () => {
+    const r = parsePlainSlip(REAL_PLAIN_0740);
+    expect(r.mapped).toBe('tabs');
+    expect(r.layout).toBe('six');
+    expect(r.lines).toHaveLength(22);
+    expect(r.lines.filter((l) => !l.parsed)).toEqual([]);
+    expect(r.note).toBe('');
+    expect(r.lines.every((l) => l.layout === 'six')).toBe(true);
+    expect(r.lines[0].cells).toEqual({
+      race: '13:00 Plumpton',
+      horse: 'Hard Stare',
+      priceA: '2.76',
+      priceB: '3.04',
+      decision: 'In · clear favourite, Betfair 2.85, next 3.04, best 2.88',
+      button: 'Take out',
+    });
+    expect(r.lines[21].cells).toEqual({
+      race: '20:30 Wolverhampton',
+      horse: 'A Lott Of Kane',
+      priceA: '4.14',
+      priceB: '5.50',
+      decision: 'Out · favourite 4.31 is longer than 4.0',
+      button: 'Put in',
+    });
+    expect(r.lines[0].raw).toBe('13:00 Plumpton | Hard Stare | 2.76 | 3.04 | In · clear favourite, Betfair 2.85, next 3.04, best 2.88 | Take out');
+    expect(r.lines[0].derived.codes).toEqual([]); // no bookmaker column in this layout
+    expect(r.lines.map((l) => l.cells.button)).toEqual(r.lines.map((l) => (l.derived.decision === 'In' ? 'Take out' : 'Put in')));
+  });
+
+  it('extracts In or Out and the named prices from the decision, beside the cell, never in its place', () => {
+    const r = parsePlainSlip(REAL_PLAIN_0740);
+    expect(r.lines[0].derived).toMatchObject({
+      layout: 'six',
+      decision: 'In',
+      reason: 'clear favourite, Betfair 2.85, next 3.04, best 2.88',
+      betfairPrice: '2.85',
+      nextPrice: '3.04',
+      bestPrice: '2.88',
+      extracted: 'full',
+      note: null,
+    });
+    expect(r.lines[0].cells.decision).toBe('In · clear favourite, Betfair 2.85, next 3.04, best 2.88');
+    const ins = r.lines.filter((l) => l.derived.decision === 'In');
+    const outs = r.lines.filter((l) => l.derived.decision === 'Out');
+    expect(ins).toHaveLength(15);
+    expect(outs).toHaveLength(7);
+    expect(ins.every((l) => l.derived.extracted === 'full' && l.derived.betfairPrice && l.derived.nextPrice)).toBe(true);
+    expect(
+      outs.every(
+        (l) =>
+          l.derived.extracted === 'decision' &&
+          l.derived.betfairPrice === null &&
+          l.derived.nextPrice === null &&
+          l.derived.bestPrice === null &&
+          l.derived.note === 'prices not named in the reason; none extracted',
+      ),
+    ).toBe(true);
+    expect(outs.map((l) => l.derived.reason)).toContain('no clear favourite (3.94 v 4.09)');
+    const merapi = r.lines.find((l) => l.cells.horse === 'Merapi');
+    expect(merapi.derived).toMatchObject({ decision: 'In', betfairPrice: '1.04', nextPrice: '3.58', bestPrice: null, extracted: 'full' });
+    expect(extractedLabel(merapi.derived)).toBe('Decision In · Betfair 1.04 · next 3.58 · best null');
+    expect(extractedLabel(r.lines[0].derived)).toBe('Decision In · Betfair 2.85 · next 3.04 · best 2.88');
+    expect(extractedLabel(outs[0].derived)).toBe('Decision Out · prices not named in the reason; none extracted');
+  });
+
+  it('flags a decision cell it cannot read, shows the row, and guesses nothing', () => {
+    const r = parsePlainSlip('13:00 Plumpton\tHard Stare\t2.76\t3.04\tMaybe · something new\tTake out\n');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(false);
+    expect(r.lines[0].layout).toBe('six');
+    expect(r.lines[0].flag).toBe('decision cell not read: expected In or Out, a middle dot, then the reason');
+    expect(r.lines[0].cells.decision).toBe('Maybe · something new');
+    expect(r.lines[0].raw).toBe('13:00 Plumpton | Hard Stare | 2.76 | 3.04 | Maybe · something new | Take out');
+    expect(extractedLabel(r.lines[0].derived)).toBe('Decision: decision cell not read: expected In or Out, a middle dot, then the reason');
+    expect(extractDecision('In · clear favourite, Betfair 2.85, next 3.04, best 2.88, extra')).toMatchObject({ decision: 'In', extracted: 'decision', betfairPrice: null });
+    expect(extractDecision('')).toMatchObject({ decision: null, extracted: 'none' });
+  });
+
+  it('reads the same 22 rows from a six-cell HTML table by position', () => {
+    const rows = REAL_PLAIN_0740.split('\n')
+      .filter(Boolean)
+      .map((l) => `<tr>${l.split('\t').map((c) => `<td>${c}</td>`).join('')}</tr>`)
+      .join('');
+    const r = parseHtmlSlip(`<table>${rows}</table>`);
+    expect(r.mapped).toBe('position');
+    expect(r.layout).toBe('six');
+    expect(r.lines).toHaveLength(22);
+    expect(r.lines.filter((l) => !l.parsed)).toEqual([]);
+    expect(r.lines.map((l) => l.cells)).toEqual(parsePlainSlip(REAL_PLAIN_0740).lines.map((l) => l.cells));
+    expect(r.lines.map((l) => l.derived.decision)).toEqual(parsePlainSlip(REAL_PLAIN_0740).lines.map((l) => l.derived.decision));
+  });
+
+  it('keeps a six column header out of the rows and in the note, and still reads the seven-cell pastes as before', () => {
+    const header = '<tr><th>Race</th><th>Horse</th><th>Lay</th><th>Next</th><th>Decision</th><th>Action</th></tr>';
+    const row = '<tr><td>13:00 Plumpton</td><td>Hard Stare</td><td>2.76</td><td>3.04</td><td>In · clear favourite, Betfair 2.85, next 3.04, best 2.88</td><td>Take out</td></tr>';
+    const r = parseHtmlSlip(`<table>${header}${row}</table>`);
+    expect(r.layout).toBe('six');
+    expect(r.lines).toHaveLength(1);
+    expect(r.lines[0].parsed).toBe(true);
+    expect(r.lines[0].cells.priceA).toBe('2.76');
+    expect(r.note).toBe('table headers: race | horse | lay | next | decision | action');
+    const old = parsePlainSlip(REAL_PLAIN_2242);
+    expect(old.layout).toBe('seven');
+    expect(old.lines.every((l) => l.layout === 'seven' && l.parsed && l.derived.layout === 'seven')).toBe(true);
   });
 });

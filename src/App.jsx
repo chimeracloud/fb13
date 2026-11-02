@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { todayInLondon } from './dates.js';
-import { parseSlip, manualLine, newId, COLUMNS, COLUMN_LABELS } from './parse.js';
+import { parseSlip, manualLine, newId, COLUMNS, COLUMN_LABELS, extractedLabel } from './parse.js';
 import { loadState, saveState } from './storage.js';
 import { buildDiagnostics, diagnosticsText } from './diagnostics.js';
 import { BUILD, buildLabel } from './build.js';
@@ -612,28 +612,56 @@ function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
             <span className="race">{c.race}</span>
             <span className="horse">{c.horse}</span>
           </div>
-          <dl className="cells">
-            <div>
-              <dt>Best price</dt>
-              <dd>{c.bestPrice}</dd>
-            </div>
-            <div>
-              <dt>Best BOG</dt>
-              <dd>{c.bestBog}</dd>
-            </div>
-            <div className={d.betfairCheck ? 'check' : ''}>
-              <dt>Betfair</dt>
-              <dd className="multiline">{c.betfair}</dd>
-            </div>
-            <div>
-              <dt>Lay target</dt>
-              <dd>{c.layTarget}</dd>
-            </div>
-            <div>
-              <dt>Betfair cap</dt>
-              <dd>{c.betfairCap}</dd>
-            </div>
-          </dl>
+          {line.layout === 'six' ? (
+            <>
+              <dl className="cells">
+                <div>
+                  <dt>Price A</dt>
+                  <dd>{c.priceA}</dd>
+                </div>
+                <div>
+                  <dt>Price B</dt>
+                  <dd>{c.priceB}</dd>
+                </div>
+                <div>
+                  <dt>Decision</dt>
+                  <dd>{c.decision}</dd>
+                </div>
+                <div>
+                  <dt>Button</dt>
+                  <dd>{c.button}</dd>
+                </div>
+                <div>
+                  <dt>Betfair cap</dt>
+                  <dd>none in this layout</dd>
+                </div>
+              </dl>
+              <p className="extracted">{extractedLabel(d)}</p>
+            </>
+          ) : (
+            <dl className="cells">
+              <div>
+                <dt>Best price</dt>
+                <dd>{c.bestPrice}</dd>
+              </div>
+              <div>
+                <dt>Best BOG</dt>
+                <dd>{c.bestBog}</dd>
+              </div>
+              <div className={d.betfairCheck ? 'check' : ''}>
+                <dt>Betfair</dt>
+                <dd className="multiline">{c.betfair}</dd>
+              </div>
+              <div>
+                <dt>Lay target</dt>
+                <dd>{c.layTarget}</dd>
+              </div>
+              <div>
+                <dt>Betfair cap</dt>
+                <dd>{c.betfairCap}</dd>
+              </div>
+            </dl>
+          )}
           {line.source !== 'manual' && (
             <details className="raw-toggle">
               <summary>As pasted</summary>

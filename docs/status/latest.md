@@ -1,40 +1,30 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 06:24 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 08:05 UTC, by the
 build agent, from the clock.
 
-**State:** 0.6.3 (cd5c624) is pushed; its Cloud Build run (4944dd11) failed
-at the test step, 3 failed and 64 passed, so nothing was built or deployed.
-The live server is still revision 00003-gv8 (0.6.1) in the failed Betfair
-state from the first login at 05:53 UTC; the page is live at 0.6.3. The two
-tests that reproduce the login failure passed. The three failures: the test's
-fake HTTP trail carried the raw token (test only), and two tests read records
-back in the wrong order because two objects written in the same millisecond
-are named `{ms}-{hex}` and the hex decided. That is a real ordering fault, not
-a test fault: "newest wins" could pick the wrong settings version or record.
-Fixed at the root in 0.6.4, committed locally, not pushed: a clock-named
-object from this process always takes a later millisecond than the one
-before it. No login attempted; the build agent does not log in. Placing is
-disabled. No order call exists.
-
-**What 0.6.3 fixed (unchanged, waiting on the deploy):** the certificate pair
-is a tuple; every Betfair record carries the HTTP trail; a failed Betfair call
-is 424, never 502; the Pages Function and the page never pass Cloudflare's
-502/504 page off as the server's words.
+**State:** the page reads the new six-cell layout of the 08:00 slip (0.6.5,
+page only, on top of ca06459, committed locally, not pushed). Charles's paste
+of 07:40 UTC on 2 November 2026 was refused by 0.6.4, all 22 rows, correctly;
+the real diagnostics are the fourth fixture. Price A and Price B are labels,
+not meanings, until Charles confirms with Mark; no order is built from such a
+line; the Betfair cap is absent and the line says so. The live server is
+0.6.4 (revision 00004-9vw), logged in since 06:41 UTC, mode paper, placing
+disabled. Step 3 and its rulings (0.7.0, 0.7.1) wait on a holding branch to
+be put back on top of this commit; they are not pushed, so the Betfair
+session stands.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- The word to push the 0.6.4 commit. The server push replaces the instance;
-  there is no session to drop.
-- After the deploy answers `/health` with 0.6.4: on the page, Refresh status;
-  Clear the session state; Log in to Betfair, once; Read the markets for
-  today. Then the build agent reads the stored records back and reports.
-- At 08:00 UK: paste the real 08:00 slip, Resolve the lines on this page.
-- Whether the pages.dev addresses should go behind Access.
+- The word to push the page fix (0.6.5) alone. Then he pastes the 08:00
+  slip again and presses Resolve on the current instance.
+- Mark's confirmation of what Price A and Price B are, and whether a Betfair
+  cap exists for this layout.
+- Later, the word to push the server commits (step 3 and the rulings), then
+  the settings version for real mode and the £2 test order, as approved.
 
-**Last did:** pushed 6f910e6 and cd5c624 on Charles's word, watched the
-build fail, read the three failures, fixed the fake and the naming, added the
-test, updated README and CHANGELOG. `requests` stays unpinned, as Charles
-ruled.
+**Last did:** built the six-cell layout into the parser, the line card and
+the export, with the real fixture and tests (112 vitest, none run here);
+updated README and CHANGELOG.
 
 **Found and reported, not acted on:**
 - The pages.dev addresses serve the page without Access. The API refuses

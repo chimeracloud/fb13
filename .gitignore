@@ -5,6 +5,8 @@ dist/
 
 # Reference clones (never committed)
 reference/
+# betfairlightweight 2.24.0, put in docs/ by Charles on 2 November 2026 for the build agent to read; read only, never committed
+docs/betfair-master/
 
 # Local secrets, should any ever exist (none are expected in version 0)
 .env

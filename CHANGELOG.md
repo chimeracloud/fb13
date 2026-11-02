@@ -2,6 +2,48 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.5] — 2026-11-02 — the six-cell layout of the 08:00 slip
+
+### Why
+The 08:00 slip email of 2 November 2026 has a new layout. The page (0.6.4)
+refused all 22 rows with "6 cells, expected 7 on one line or 5 then an API
+line of 3": correct, nothing dropped or guessed. Charles sent the real
+diagnostics (text/plain 2193 characters, tab separated, one line per row,
+six cells; the HTML table, 91976 characters, has six cells per row) and asked
+for the layout to be read alongside the old one. Page only, on top of
+ca06459, so it can be pushed alone and touches nothing under `server/**`.
+
+### Added
+- `src/parse.js`: the six-cell layout. Race | Horse | Price A | Price B |
+  Decision | Button, by position, from tab-separated text (six cells on one
+  line) and from an HTML table (rows of six cells; a six-column header naming
+  race and horse is kept out of the rows and shown in the note). Every cell
+  verbatim. From the decision cell, beside it and never in its place: In or
+  Out; where the reason names them, the Betfair price, the next price and the
+  best bookmaker price (null when it says null). A reason in another shape
+  gives the decision alone, with the note "prices not named in the reason;
+  none extracted" (the seven Out rows of the real slip; fifteen rows are In). A cell that does not
+  start with In or Out and a middle dot is flagged and the row shown raw,
+  never guessed. Each line and each parse carry `layout`: seven, six, mixed.
+  The seven-cell layout reads exactly as before.
+- The line card shows a six-cell line as Price A, Price B, Decision, Button,
+  "Betfair cap: none in this layout", and the extracted decision in words.
+- `src/export.js`: nine columns appended to the CSV (layout, the four cells,
+  what was extracted) so every earlier column keeps its place; the JSON embeds
+  the whole line as before.
+- `src/fixtures/real-2026-11-02-0740-slip-0800.js`: the 22 real rows from
+  the diagnostics, 2193 characters to the character. The HTML was not in the
+  message; the HTML test builds a six-cell table from the real rows.
+- Tests: 6 for the layout, 1 for the export; 112 vitest.
+
+### Not decided here
+- What Price A and Price B mean. Charles's reading (A about 3 to 4 percent
+  under the Betfair price, probably the lay target; B the next favourite's
+  price) is confirmed with Mark. No order is built from a six-cell line until
+  then; when confirmed as read, the order builder would take Price A as the
+  lay target and Price B not at all, with no course cap, and the confirm
+  panel would say the cap is absent.
+
 ## [0.6.4] — 2026-11-02 — the 0.6.3 build failed: record order within a millisecond
 
 ### Why

@@ -66,7 +66,8 @@ describe('the CSV', () => {
     expect(rows[0]).toBe(CSV_COLUMNS.map(([name]) => name).join(','));
     expect(rows[0]).toBe(
       'date,slot,race,horse,kind,mode,where,where_kind,side,price,stake,bog,placed_time,how,reference,' +
-        'recorded_at_london,recorded_at_utc,best_price,best_bog,betfair,lay_target,betfair_cap,line_flag,entry_id,line_id',
+        'recorded_at_london,recorded_at_utc,best_price,best_bog,betfair,lay_target,betfair_cap,line_flag,entry_id,line_id,' +
+        'layout,price_a,price_b,decision,button,decision_in_out,decision_betfair,decision_next,decision_best',
     );
   });
 
@@ -184,5 +185,35 @@ describe('the file', () => {
     if (href.startsWith('data:')) {
       expect(decodeURIComponent(href.slice(href.indexOf(',') + 1))).toBe('a,b\r\n');
     }
+  });
+});
+
+import { parsePlainSlip as parseSix } from './parse.js';
+import { makeEntry as makeSixEntry } from './entries.js';
+import { entriesToCsv as sixCsv } from './export.js';
+
+describe('a six-cell line in the export', () => {
+  it('carries the four new cells and what was extracted, in the appended columns, with the old ones blank', () => {
+    const parsed = parseSix('20:00 Wolverhampton\tMerapi\t1.04\t3.58\tIn · clear favourite, Betfair 1.04, next 3.58, best null\tTake out\n');
+    const line = { ...parsed.lines[0], slot: '08:00', date: '2026-11-02' };
+    const entry = makeSixEntry({ line, kind: 'not_placed', now: new Date('2026-11-02T08:05:00.000Z') });
+    const rows = sixCsv([entry], [line]).slice(1).split('\r\n');
+    const fields = rows[1].split(',');
+    const names = rows[0].split(',');
+    const at = (name) => fields[names.indexOf(name)];
+    expect(at('race')).toBe('20:00 Wolverhampton');
+    expect(at('horse')).toBe('Merapi');
+    expect(at('best_price')).toBe('');
+    expect(at('lay_target')).toBe('');
+    expect(at('betfair_cap')).toBe('');
+    expect(at('layout')).toBe('six');
+    expect(at('price_a')).toBe('1.04');
+    expect(at('price_b')).toBe('3.58');
+    expect(at('button')).toBe('Take out');
+    expect(at('decision_in_out')).toBe('In');
+    expect(at('decision_betfair')).toBe('1.04');
+    expect(at('decision_next')).toBe('3.58');
+    expect(at('decision_best')).toBe('null');
+    expect(rows[1]).toContain('"In · clear favourite, Betfair 1.04, next 3.58, best null"'); // the cell itself, quoted for its commas
   });
 });

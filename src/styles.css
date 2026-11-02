@@ -699,3 +699,11 @@ pre.diag {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+/* ---- the six-cell layout of 2 November 2026 ---- */
+
+.line .extracted {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}

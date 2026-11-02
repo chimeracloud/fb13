@@ -46,6 +46,17 @@ export const CSV_COLUMNS = [
   ['line_flag', (e, l) => l.flag || ''],
   ['entry_id', (e) => e.id],
   ['line_id', (e) => e.lineId],
+  // The six-cell layout of 2 November 2026, appended so earlier columns keep their places.
+  // Lines kept before 0.6.5 carry no layout: those with cells are the seven-cell layout.
+  ['layout', (e, l) => l.layout || (l.cells && Object.keys(l.cells).length ? 'seven' : '')],
+  ['price_a', cell('priceA')],
+  ['price_b', cell('priceB')],
+  ['decision', cell('decision')],
+  ['button', cell('button')],
+  ['decision_in_out', (e, l) => (l.derived && l.derived.decision) || ''],
+  ['decision_betfair', (e, l) => (l.derived && l.derived.betfairPrice) || ''],
+  ['decision_next', (e, l) => (l.derived && l.derived.nextPrice) || ''],
+  ['decision_best', (e, l) => (l.derived && l.derived.extracted === 'full' ? (l.derived.bestPrice === null ? 'null' : l.derived.bestPrice) : '')],
 ];
 
 /** One CSV field, RFC 4180: quoted when it holds a comma, a quote or a line break, quotes doubled. */

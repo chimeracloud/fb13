@@ -37,6 +37,33 @@ export const COLUMN_LABELS = {
   betfairCap: 'Betfair cap',
 };
 
+// A second layout, first seen on 2 November 2026 in the real 08:00 slip: six
+// cells on one line. Race | Horse | a price | a second price | a decision ("In"
+// or "Out", a middle dot, a reason) | a button label ("Take out" or "Put in").
+// What the two prices mean is not assumed: they are Price A and Price B until
+// Charles confirms with Mark (his reading: A is about 3 to 4 percent under the
+// Betfair price, probably the lay target; B is the next favourite's price). No
+// bookmaker codes, no BOG, no API line, no Betfair cap. Both layouts stay.
+export const COLUMNS_SIX = [
+  { key: 'race' },
+  { key: 'horse' },
+  { key: 'priceA' },
+  { key: 'priceB' },
+  { key: 'decision' },
+  { key: 'button' },
+];
+
+export const COLUMN_LABELS_SIX = {
+  race: 'Race',
+  horse: 'Horse',
+  priceA: 'Price A',
+  priceB: 'Price B',
+  decision: 'Decision',
+  button: 'Button',
+};
+
+export const LAYOUTS = { seven: COLUMNS, six: COLUMNS_SIX };
+
 const DASH = '[\\u2013\\u2014\\u2212-]'; // en dash, em dash, minus, hyphen
 const NUM = '\\d+(?:\\.\\d+)?';
 const TIME = '\\d{1,2}:\\d{2}';
@@ -118,7 +145,7 @@ export function codesFromBestPrice(text) {
 
 /** A few derived pieces for display and for the form. The cell text stays the source. */
 export function derive(cells) {
-  const d = {};
+  const d = { layout: 'seven' };
   d.codes = codesFromBestPrice(cells.bestPrice);
   const bf = (cells.betfair || '').split('\n');
   d.betfairCheck = /⚠|check/i.test(cells.betfair || '');
@@ -126,17 +153,79 @@ export function derive(cells) {
   return d;
 }
 
-function makeLine({ cells, raw, source, flag = null, mapped = null }) {
-  const complete = cells && COLUMNS.every((c) => typeof cells[c.key] === 'string');
+// The decision cell of the six-cell layout, as seen on 2 November 2026:
+//   In · clear favourite, Betfair 2.85, next 3.04, best 2.88
+//   In · clear favourite, Betfair 1.04, next 3.58, best null
+//   Out · favourite 4.51 is longer than 4.0
+//   Out · no clear favourite (3.94 v 4.09)
+// "In" or "Out" is read from the start. The three prices are read only where
+// the reason names them ("Betfair", "next", "best"); "best null" is null. A
+// reason in any other shape gives the decision alone and says so. A cell that
+// does not start with In or Out and a middle dot is not read: flagged, not guessed.
+const DECISION = /^(In|Out)\s*\u00b7\s*(.+)$/;
+const IN_REASON = new RegExp(`^clear favourite, Betfair (${NUM}), next (${NUM}), best (${NUM}|null)$`);
+
+export function extractDecision(text) {
+  const t = tidyLines(text).replace(/\n/g, ' ');
+  const out = { decision: null, reason: null, betfairPrice: null, nextPrice: null, bestPrice: null, extracted: 'none', note: null };
+  const m = t.match(DECISION);
+  if (!m) {
+    out.note = 'decision cell not read: expected In or Out, a middle dot, then the reason';
+    return out;
+  }
+  out.decision = m[1];
+  out.reason = m[2].trim();
+  const p = out.reason.match(IN_REASON);
+  if (p) {
+    out.betfairPrice = p[1];
+    out.nextPrice = p[2];
+    out.bestPrice = p[3] === 'null' ? null : p[3];
+    out.extracted = 'full';
+    return out;
+  }
+  out.extracted = 'decision';
+  out.note = 'prices not named in the reason; none extracted';
+  return out;
+}
+
+/** Derived pieces of a six-cell line: no codes (no bookmaker column), the decision extracted beside the cell. */
+export function deriveSix(cells) {
+  return { layout: 'six', codes: [], ...extractDecision(cells.decision) };
+}
+
+/** One line of words for what was extracted from the decision cell, for the line card. */
+export function extractedLabel(d) {
+  if (!d) return '';
+  if (!d.decision) return d.note ? `Decision: ${d.note}` : '';
+  if (d.extracted === 'full') {
+    return `Decision ${d.decision} · Betfair ${d.betfairPrice} · next ${d.nextPrice} · best ${d.bestPrice === null ? 'null' : d.bestPrice}`;
+  }
+  return `Decision ${d.decision} · ${d.note}`;
+}
+
+/** 'seven', 'six', 'mixed' or null: the layout of the parsed lines of one paste. */
+export function layoutOf(lines) {
+  const set = new Set((lines || []).filter((l) => l.parsed).map((l) => l.layout));
+  if (set.size === 0) return null;
+  return set.size === 1 ? [...set][0] : 'mixed';
+}
+
+function makeLine({ cells, raw, source, flag = null, mapped = null, layout = 'seven' }) {
+  const columns = LAYOUTS[layout] || COLUMNS;
+  const complete = cells && columns.every((c) => typeof cells[c.key] === 'string');
+  const derived = cells ? (layout === 'six' ? deriveSix(cells) : derive(cells)) : { codes: [] };
+  let why = flag || (complete ? null : 'row did not read');
+  if (!why && layout === 'six' && derived.extracted === 'none') why = derived.note;
   return {
     id: newId(),
     source,
     mapped,
+    layout,
     raw,
-    parsed: !flag && !!complete,
-    flag: flag || (complete ? null : 'row did not read'),
+    parsed: !why,
+    flag: why,
     cells: cells || {},
-    derived: cells ? derive(cells) : { codes: [] },
+    derived,
   };
 }
 
@@ -173,15 +262,17 @@ function findSlipTable(doc) {
   for (const table of tables) {
     const rows = ownRows(table);
     const sevens = rows.filter((r) => directCells(r).length === COLUMNS.length).length;
-    if (sevens > 0 && (!best || sevens > best.sevens)) best = { table, rows, sevens };
+    const sixes = rows.filter((r) => directCells(r).length === COLUMNS_SIX.length).length;
+    const n = Math.max(sevens, sixes);
+    if (n > 0 && (!best || n > best.n)) best = { table, rows, n, layout: sevens >= sixes ? 'seven' : 'six' };
   }
   if (!best) return null;
-  return { table: best.table, headerRowIndex: -1, headers: null, rows: best.rows, byHeader: false };
+  return { table: best.table, headerRowIndex: -1, headers: null, rows: best.rows, byHeader: false, layout: best.layout };
 }
 
 /**
  * Parse the clipboard's text/html. Returns null when there is no table with a
- * header or with rows of seven cells, so the caller can fall back to text.
+ * header or with rows of seven or six cells, so the caller can fall back to text.
  */
 export function parseHtmlSlip(html) {
   if (!html || !/<table/i.test(html)) return null;
@@ -189,8 +280,19 @@ export function parseHtmlSlip(html) {
   const found = findSlipTable(doc);
   if (!found) return null;
 
-  const { table, headerRowIndex, headers, rows, byHeader } = found;
-  const mapped = byHeader ? 'header' : 'position';
+  const { table, headerRowIndex, headers, rows } = found;
+  let { byHeader } = found;
+  let layout = found.layout || 'seven';
+  let mapped = byHeader ? 'header' : 'position';
+  if (byHeader && !COLUMNS.every((col) => headers.includes(col.header)) && headers.length === COLUMNS_SIX.length) {
+    // A six column header naming race and horse: the new layout. Its other
+    // header texts are not assumed to mean anything; the cells are taken in
+    // order, and the header texts are kept in the note for a person to see.
+    layout = 'six';
+    byHeader = false;
+    mapped = 'position';
+  }
+  const columns = LAYOUTS[layout];
   const index = {};
   const missing = [];
   if (byHeader) {
@@ -200,11 +302,11 @@ export function parseHtmlSlip(html) {
       else index[col.key] = at;
     }
   } else {
-    COLUMNS.forEach((col, i) => {
+    columns.forEach((col, i) => {
       index[col.key] = i;
     });
   }
-  const expected = byHeader ? headers.length : COLUMNS.length;
+  const expected = byHeader ? headers.length : columns.length;
   const raceStartsWithTime = new RegExp(`^${TIME}\\b`);
 
   const lines = [];
@@ -230,22 +332,23 @@ export function parseHtmlSlip(html) {
       continue;
     }
     const cells = {};
-    for (const col of COLUMNS) cells[col.key] = texts[index[col.key]];
+    for (const col of columns) cells[col.key] = texts[index[col.key]];
     if (!byHeader && !raceStartsWithTime.test(cells.race)) {
       // Without a header to go by, a row whose first cell is not a race time
       // is not read as a bet. Most likely a header row with other names.
-      lines.push(makeLine({ raw, source: 'html', mapped, flag: 'first cell is not a race time' }));
+      lines.push(makeLine({ raw, source: 'html', mapped, layout, flag: 'first cell is not a race time' }));
       continue;
     }
-    lines.push(makeLine({ cells, raw, source: 'html', mapped }));
+    lines.push(makeLine({ cells, raw, source: 'html', mapped, layout }));
   }
 
   // Everything that is not the table is kept as a note, unparsed.
   const body = doc.body;
   table.remove();
-  const note = cellText(body);
+  const headerNote = layout === 'six' && headers ? `table headers: ${headers.join(' | ')}` : '';
+  const note = [headerNote, cellText(body)].filter(Boolean).join('\n');
 
-  return { lines, note, source: 'html', mapped };
+  return { lines, note, source: 'html', mapped, layout: layoutOf(lines) };
 }
 
 // ---------------------------------------------------------- plain text path
@@ -272,31 +375,51 @@ function showTabs(line) {
 }
 
 /**
- * Seven cells on one line, or five on the first line (ending with the Betfair
- * price) and three on the API line (API time, lay target, cap), which are
- * joined with the Betfair cell carrying its line break.
+ * Seven cells on one line; or six cells on one line (the layout of 2 November
+ * 2026); or five on the first line (ending with the Betfair price) and three on
+ * the API line (API time, lay target, cap), which are joined with the Betfair
+ * cell carrying its line break. Returns the layout with the cells.
  */
 function rowFromTabCells(first, second) {
   if (!second && first.length === 7) {
     return {
-      race: first[0],
-      horse: stripStars(first[1]),
-      bestPrice: first[2],
-      bestBog: first[3],
-      betfair: first[4],
-      layTarget: unstar(first[5]),
-      betfairCap: first[6],
+      layout: 'seven',
+      cells: {
+        race: first[0],
+        horse: stripStars(first[1]),
+        bestPrice: first[2],
+        bestBog: first[3],
+        betfair: first[4],
+        layTarget: unstar(first[5]),
+        betfairCap: first[6],
+      },
+    };
+  }
+  if (!second && first.length === 6) {
+    return {
+      layout: 'six',
+      cells: {
+        race: first[0],
+        horse: stripStars(first[1]),
+        priceA: first[2],
+        priceB: first[3],
+        decision: first[4],
+        button: first[5],
+      },
     };
   }
   if (second && first.length === 5 && second.length === 3) {
     return {
-      race: first[0],
-      horse: stripStars(first[1]),
-      bestPrice: first[2],
-      bestBog: first[3],
-      betfair: `${first[4]}\n${second[0]}`,
-      layTarget: unstar(second[1]),
-      betfairCap: second[2],
+      layout: 'seven',
+      cells: {
+        race: first[0],
+        horse: stripStars(first[1]),
+        bestPrice: first[2],
+        bestBog: first[3],
+        betfair: `${first[4]}\n${second[0]}`,
+        layTarget: unstar(second[1]),
+        betfairCap: second[2],
+      },
     };
   }
   return null;
@@ -326,17 +449,17 @@ function parseTabbed(all) {
       }
     }
     const raw = [line, secondLine].filter(Boolean).map(showTabs).join('\n');
-    const cells = rowFromTabCells(first, second);
-    if (!cells) {
+    const row = rowFromTabCells(first, second);
+    if (!row) {
       const why = second
         ? `${first.length} cells then ${second.length} on the API line, expected 5 then 3`
-        : `${first.length} cells, expected 7 on one line or 5 then an API line of 3`;
+        : `${first.length} cells, expected 7 or 6 on one line, or 5 then an API line of 3`;
       lines.push(makeLine({ raw, source: 'text', mapped: 'tabs', flag: why }));
       continue;
     }
-    lines.push(makeLine({ cells, raw, source: 'text', mapped: 'tabs' }));
+    lines.push(makeLine({ cells: row.cells, raw, source: 'text', mapped: 'tabs', layout: row.layout }));
   }
-  return { lines, note: noteParts.join('\n'), source: 'text', mapped: 'tabs' };
+  return { lines, note: noteParts.join('\n'), source: 'text', mapped: 'tabs', layout: layoutOf(lines) };
 }
 
 // --- without tabs: the email's own plain text, the horse between asterisks
@@ -438,7 +561,7 @@ function parseUntabbed(all) {
     };
     lines.push(makeLine({ cells, raw, source: 'text', mapped: 'asterisks' }));
   }
-  return { lines, note: noteParts.join('\n'), source: 'text', mapped: 'asterisks' };
+  return { lines, note: noteParts.join('\n'), source: 'text', mapped: 'asterisks', layout: layoutOf(lines) };
 }
 
 /** Parse the plain text. Always returns a result. */
@@ -454,7 +577,7 @@ export function parseSlip({ html, text }) {
   const fromHtml = parseHtmlSlip(html);
   if (fromHtml && fromHtml.lines.length > 0) return fromHtml;
   const plain = text && text.trim() ? text : fromHtml ? '' : htmlToText(html);
-  if (!plain.trim()) return { lines: [], note: '', source: 'empty' };
+  if (!plain.trim()) return { lines: [], note: '', source: 'empty', layout: null };
   return parsePlainSlip(plain);
 }
 

@@ -29,9 +29,10 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
+| B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 105 tests (9 for the Pages Function, 9 for the page's calls to its server), run by every Pages build before `vite build` |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 112 tests (9 for the Pages Function, 9 for the page's calls to its server, 6 for the six-cell layout from the fourth real paste), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
 | v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
@@ -122,8 +123,32 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
 ## The input
 
-The slip table has seven columns: Race, Horse, Best price, Best BOG, Betfair,
-Lay target, Betfair cap.
+Two layouts of the slip table are read. Both stay; a paste is read as whichever
+it is.
+
+**The six-cell layout** (first seen 2 November 2026, the real 08:00 slip):
+one row per selection, six cells. Race | Horse | a price | a second price |
+a decision | a button label. Charles's reading, to confirm with Mark: the
+first price is about 3 to 4 percent under the Betfair price, probably the lay
+target; the second is the next favourite's price. Nothing is assumed: the
+page labels them **Price A** and **Price B**. The decision cell is "In" or
+"Out", a middle dot, and a reason, as in
+`In · clear favourite, Betfair 2.85, next 3.04, best 2.88` or
+`Out · favourite 4.51 is longer than 4.0`. The cell is kept verbatim; beside
+it the page extracts In or Out and, where the reason names them, the Betfair
+price, the next price and the best bookmaker price (`best null` is null). A
+reason in another shape gives the decision alone and says "prices not named
+in the reason; none extracted". A cell that does not start with In or Out and
+a middle dot is flagged and the row shown raw, never guessed. The button cell
+is "Take out" or "Put in". There is no bookmaker column (the "where" field
+offers Betfair and Other), no BOG, no API line and **no Betfair cap**: the
+line says "none in this layout", and the order builder applies no course cap
+to such a line. **No order is built from a six-cell line** until Charles
+confirms with Mark which price is the lay target; when he does, the builder
+would take Price A as the lay target and Price B not at all.
+
+**The seven-cell layout** (30 October to 1 November 2026): Race, Horse, Best
+price, Best BOG, Betfair, Lay target, Betfair cap.
 
 | Column | What arrives | Kept as |
 | --- | --- | --- |
@@ -135,11 +160,16 @@ Lay target, Betfair cap.
 | Lay target | A bold price and `(13% under)` or `(5% under)`; or `–` | Text |
 | Betfair cap | A pound amount, `£240` | Text |
 
-Columns are matched by header text when a header row is present, so their
-order does not matter. Without a header they are taken in the order above. A
-row with a different number of cells, a table missing one of the seven headers,
-or, without a header, a row whose first cell is not a race time, is flagged and
-shown raw.
+Seven-cell columns are matched by header text when a header row is present,
+so their order does not matter. Without a header they are taken in the order
+above. Six-cell rows are taken in order; a six-column header naming race and
+horse is kept out of the rows and shown in the note. The HTML table is read
+first, then tab-separated text (one line of six or seven cells, or the
+seven-cell pair of lines), then the email's own untabbed text (seven-cell
+only). A row with a different number of cells, a table missing one of the seven
+headers, or, without a header, a row whose first cell is not a race time, is
+flagged and shown raw. The export's CSV carries the six-cell layout's cells and
+what was extracted in columns appended after the old ones.
 
 ## Version 1: the server
 
@@ -488,6 +518,11 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0.
+- **The slip's layout changes.** The 08:00 slip of 2 November 2026 arrived in
+  a new six-cell layout and 0.6.4 refused all 22 rows, correctly. 0.6.5 reads
+  it; what its two prices mean, and whether a Betfair cap exists elsewhere, is
+  confirmed with Mark. A further change would be refused the same way, shown
+  raw, until read.
 - **The clipboard's shape.** Confirmed from three real pastes, 30 October and
   1 November 2026 (Gmail in Safari 27.2 on a Mac, the 10:00 and 08:00 slips):
   both text/html and text/plain arrive; the HTML table has no header row, so

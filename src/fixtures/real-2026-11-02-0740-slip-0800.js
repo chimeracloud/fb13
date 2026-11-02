@@ -1,0 +1,16 @@
+// The text/plain of the fourth real paste, copied from the "FB13 paste
+// diagnostics" Charles sent on 2 November 2026 (pasted at 07:40:59 UTC, page
+// 0.6.4 at ca06459): the real 08:00 Early Doors slip of 2 November 2026, for
+// Plumpton, Southwell and Wolverhampton. Copied from Gmail in Safari on a Mac.
+// Tabs and line feeds are the real characters, as the diagnostics showed them
+// (tabs as →, line feeds as ¶). A NEW LAYOUT: one line per selection, six
+// cells: race, horse, a price, a second price, a decision ("In" or "Out", a
+// middle dot, a reason), and a button label ("Take out" or "Put in"). No
+// bookmaker codes, no BOG, no API line, no Betfair cap. 22 selections.
+// The diagnostics reported text/plain 2193 characters; this string is 2193.
+// The text/html (91976 characters) was not in the message and is not here.
+
+export const REAL_PLAIN_0740 =
+  '13:00 Plumpton\tHard Stare\t2.76\t3.04\tIn · clear favourite, Betfair 2.85, next 3.04, best 2.88\tTake out\n13:15 Southwell\tJust In A Bit\t4.33\t5.13\tOut · favourite 4.51 is longer than 4.0\tPut in\n13:30 Plumpton\tLe Cold Grey\t2.76\t3.27\tIn · clear favourite, Betfair 2.85, next 3.27, best 2.75\tTake out\n13:45 Southwell\tJoyau Allen\t2.29\t5.13\tIn · clear favourite, Betfair 2.36, next 5.13, best 2.25\tTake out\n14:00 Plumpton\tHiero Sport\t4.63\t6.16\tOut · favourite 4.82 is longer than 4.0\tPut in\n14:15 Southwell\tChinese Whispers\t2.67\t6.16\tIn · clear favourite, Betfair 2.76, next 6.16, best 2.75\tTake out\n14:30 Plumpton\tKocktail Bleu\t3.50\t5.13\tIn · clear favourite, Betfair 3.63, next 5.13, best 3.5\tTake out\n14:45 Southwell\tMidnight Jukebox\t2.37\t3.06\tIn · clear favourite, Betfair 2.44, next 3.06, best 2.38\tTake out\n15:00 Plumpton\tJubilant\t3.55\t4.20\tIn · clear favourite, Betfair 3.68, next 4.2, best 2.88\tTake out\n15:15 Southwell\tOur Girl Sal\t3.79\t4.09\tOut · no clear favourite (3.94 v 4.09)\tPut in\n15:30 Plumpton\tGoodwin Face\t3.60\t3.94\tIn · clear favourite, Betfair 3.74, next 3.94, best 3.5\tTake out\n15:45 Southwell\tInca\t2.82\t4.72\tIn · clear favourite, Betfair 2.92, next 4.72, best 2.88\tTake out\n16:00 Plumpton\tThe Boss Bear\t3.94\t4.51\tOut · favourite 4.09 is longer than 4.0\tPut in\n16:30 Wolverhampton\tThe Anthony Gover\t2.74\t8.22\tIn · clear favourite, Betfair 2.83, next 8.22, best 2.88\tTake out\n17:00 Wolverhampton\tTwo Commanders\t4.43\t4.82\tOut · favourite 4.61 is longer than 4.0\tPut in\n17:30 Wolverhampton\tSergeant Pep\t4.04\t4.82\tOut · favourite 4.2 is longer than 4.0\tPut in\n18:00 Wolverhampton\tCavan Lady\t3.45\t6.57\tIn · clear favourite, Betfair 3.58, next 6.57, best 3.75\tTake out\n18:30 Wolverhampton\tWosta\t1.40\t7.60\tIn · clear favourite, Betfair 1.42, next 7.6, best 1.5\tTake out\n19:00 Wolverhampton\tThat Darn Cantor\t2.84\t4.92\tIn · clear favourite, Betfair 2.94, next 4.92, best 2.88\tTake out\n19:30 Wolverhampton\tSovereign Bay\t3.45\t4.51\tIn · clear favourite, Betfair 3.58, next 4.51, best 3.75\tTake out\n20:00 Wolverhampton\tMerapi\t1.04\t3.58\tIn · clear favourite, Betfair 1.04, next 3.58, best null\tTake out\n20:30 Wolverhampton\tA Lott Of Kane\t4.14\t5.50\tOut · favourite 4.31 is longer than 4.0\tPut in\n';
+
+export const REAL_PLAIN_0740_SELECTIONS = 22;
