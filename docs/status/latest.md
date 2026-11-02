@@ -1,8 +1,7 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 03:01 UTC, by the
-build agent. (Earlier status files today carried estimated times that ran up
-to an hour fast; from this one the time is read from the clock.)
+**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 05:14 UTC, by the
+build agent, from the clock.
 
 **State:** step 2 is deployed and ready for the first login. Revision
 `fb13-trade-slip-api-00003-gv8` runs image `:945b2c1` (0.6.1): one instance,
@@ -24,8 +23,13 @@ Placing is disabled.
   as a fixture and tests the resolver against real lines.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** pushed 0.6.0 (7c9b01c) and 0.6.1 (945b2c1), watched both builds
-to SUCCESS, read the service back and called `/health` and `/ready`.
+**Last did:** at Charles's ask, removed three texts from the page (the
+banner, the export section's worksheet notice, the footer's worksheet notice)
+and the style rule nothing used after; page only, `server/**` untouched, so no
+server redeploy and the Betfair session stands. 0.6.2, committed locally,
+not pushed; the push waits for Charles's word. Before that: pushed 0.6.0
+(7c9b01c) and 0.6.1 (945b2c1), watched both builds to SUCCESS, read the
+service back and called `/health` and `/ready`.
 
 **Found and reported, not acted on:**
 - The pages.dev addresses serve the page without Access. The API refuses

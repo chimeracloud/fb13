@@ -2,6 +2,29 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.2] — 2026-11-02 — three texts off the page
+
+### Removed
+- From the page, at Charles's ask of 2 November 2026, page only: the banner
+  "This page records what a person did elsewhere. It places nothing."; the
+  export section's "Worksheet, not yet the record. This browser is the only
+  store, and the export is the only way out."; the footer's "Worksheet, not
+  yet the record. Everything stays in this browser on this device, and nothing
+  is sent anywhere. An entry is never edited or deleted: a correction is a new
+  entry, and the history stays." The footer keeps the build line and the tag.
+  The server panel keeps the mode and the placing status. No test asserted
+  these texts, so none was removed; 104 vitest cases as before.
+- `src/styles.css`: the `.export .worksheet` rule, which nothing used after
+  the paragraph went.
+
+### Not changed
+- `server/**` and `cloudbuild.yaml`: untouched, so the trigger does not run
+  and the server and its Betfair session are not redeployed.
+- The notice inside the exported JSON file (`NOTICE` in `src/export.js`, a
+  different text, in the file and not on the page) and its test. Left for
+  Charles to rule on.
+- README line 11, the README's own statement of what version 0 does.
+
 ## [0.6.1] — 2026-11-02 — one instance, always on
 
 ### Changed

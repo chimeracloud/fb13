@@ -152,10 +152,6 @@ export default function App() {
         <h1>FB13 Trade slip</h1>
       </header>
 
-      <div className="banner" role="note">
-        This page records what a person did elsewhere. It places nothing.
-      </div>
-
       {!storageOk && (
         <div className="banner warn" role="alert">
           This browser is not saving. Anything on this page is lost when it closes.
@@ -251,11 +247,6 @@ export default function App() {
       </main>
 
       <footer>
-        <p>
-          Worksheet, not yet the record. Everything stays in this browser on this device, and
-          nothing is sent anywhere. An entry is never edited or deleted: a correction is a new
-          entry, and the history stays.
-        </p>
         <p className="build">FB13 trade slip, {buildLabel(BUILD)}.</p>
         <p className="tag">Born from complexity. Engineered for certainty.</p>
       </footer>
@@ -440,10 +431,6 @@ function ExportPanel({ entries, lines }) {
           Export JSON
         </button>
       </div>
-      <p className="worksheet">
-        Worksheet, not yet the record. This browser is the only store, and the export is the only
-        way out.
-      </p>
       {note && (
         <p className={`message ${note.kind}`} role="status">
           {note.text}

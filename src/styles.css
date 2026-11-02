@@ -638,11 +638,6 @@ pre.diag {
   font-size: 14px;
 }
 
-.export .worksheet {
-  margin: 10px 0 0;
-  color: var(--cream);
-}
-
 .export .message {
   margin: 10px 0 0;
 }

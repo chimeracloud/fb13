@@ -93,8 +93,9 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   its flag. A not placed entry carries no mode, because none was stated. The
   JSON carries the same entries with the whole line embedded, the page version
   and the time of export. The file is made in the browser and saved to the
-  device; nothing is sent anywhere. The worksheet notice sits beside the
-  buttons: this browser is the only store, and the export is the only way out.
+  device. The worksheet notice that sat beside the buttons, the banner above
+  the counters and the footer notice were removed at Charles's ask on
+  2 November 2026 (0.6.2); the exported JSON still carries its own notice.
 - The footer names the build: "FB13 trade slip, version 0.4.1, commit
   7642519." The diagnostics carry the build that took the paste, on the first
   line of the copied text and of the panel, so a paste always says which
@@ -468,7 +469,7 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   by generating a lock in CI.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
-  Export is the only way out in version 0, and the page says so.
+  Export is the only way out in version 0.
 - **The clipboard's shape.** Confirmed from three real pastes, 30 October and
   1 November 2026 (Gmail in Safari 27.2 on a Mac, the 10:00 and 08:00 slips):
   both text/html and text/plain arrive; the HTML table has no header row, so
