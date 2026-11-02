@@ -11,15 +11,23 @@ order, records it, and sends nothing. Real sends it, only when the stored
 settings say real, Charles has confirmed Access covers the page, and the kill
 switch is off. The mode is the stored settings', never the page's.
 
-Choices made here and flagged for Charles, not ruled by him:
+Charles's rulings of 2 November 2026 on the builder's choices:
 - The lay target is moved DOWN to the nearest valid tick, never above the
-  target, so the liability never exceeds what the slip accepted.
-- The slip's "Betfair cap" for the course is read as the most that may be
-  laid at that course, in backer's stake (the order's size); above it, refuse.
+  target, so the liability never exceeds what the slip accepted. Approved.
+- The slip's "Betfair cap" for the course is read, FOR NOW AND AS AN
+  ASSUMPTION, as the most that may be laid at that course in backer's stake
+  (the order's size); above it, refuse, and say the refusal rests on this
+  reading. Claude Strategy reads Mark's note as a cap on the Betfair BACK
+  stake at a course, the excess going to bookmakers, so it may not apply to
+  lays at all. Confirmed at the handover with Mark.
 - A line counts as placed once a place was recorded for it in that mode on
-  that day, cancelled or not; a second ask is refused.
+  that day, cancelled or not; a second ask is refused. Approved.
 - The day's money at risk counts every order placed in the mode that day,
-  cancelled or not (and the test order's 2.00): simple and on the safe side.
+  cancelled or not, and the test order's 2.00. Approved.
+- The minimum size is 2.00 for any order, whatever Betfair's currency table
+  says; below it, refuse in words.
+- Nothing is laid once the race has started. Approved.
+- The caps stay at 5.00 an order and 10.00 a mode a London day.
 - Sizes are rounded down to the penny; liability to the nearest penny.
 
 The test order (Charles, 2 November 2026): one BACK of 2.00 at the maximum
@@ -29,9 +37,7 @@ sentence typed in words. Its references name it FB13-TEST, so it can never be
 mistaken for a line's order; it is never counted as one.
 
 Betfair's price ladder is its published increments (INVALID_ODDS outside
-them); the minimum-bet rule is Betfair's: a size at or above the currency's
-minimum, or a payout (size x price) at or above the minimum payout, both
-from betfairlightweight's currency table.
+them).
 """
 
 from __future__ import annotations
@@ -62,7 +68,7 @@ TEST_SIZE = Decimal("2.00")
 TEST_PRICE = Decimal("1000")
 TEST_CONFIRMATION = "I confirm the real test order: back 2.00 at 1000"
 PENNY = Decimal("0.01")
-CURRENCY = "GBP"
+MIN_SIZE = Decimal("2.00")  # Charles's ruling of 2 November 2026: for any order, whatever Betfair's currency table says
 
 # Betfair's price increments, as published: (from, up to but not including, step). The last band includes 1000.
 LADDER = (
@@ -124,21 +130,11 @@ def money(d: Decimal, rounding: str = ROUND_HALF_UP) -> Decimal:
     return d.quantize(PENNY, rounding=rounding)
 
 
-def currency_minimums() -> dict[str, Any]:
-    """Betfair's minimum bet size and minimum payout for GBP, from betfairlightweight's table."""
-    from betfairlightweight.metadata import currency_parameters  # here, so that importing the app loads nothing of it
-
-    return dict(currency_parameters[CURRENCY])
-
-
-def min_bet_ok(size: Decimal, price: Decimal) -> tuple[bool, str]:
-    m = currency_minimums()
-    min_size, min_payout = Decimal(str(m["min_bet_size"])), Decimal(str(m["min_bet_payout"]))
-    if size >= min_size:
-        return True, f"size {size} at or above the minimum {min_size}"
-    if size * price >= min_payout:
-        return True, f"size {size} below the minimum {min_size} but payout {money(size * price)} at or above {min_payout}"
-    return False, f"size {size} is below Betfair's minimum {min_size} and its payout {money(size * price)} is below the minimum payout {min_payout}"
+def min_size_ok(size: Decimal) -> tuple[bool, str]:
+    """The minimum is 2.00 for any order, by Charles's ruling, whatever Betfair's currency table says."""
+    if size >= MIN_SIZE:
+        return True, f"size {size} at or above the minimum of {MIN_SIZE} an order"
+    return False, f"size {size} is below the minimum of {MIN_SIZE} an order (Charles's ruling of 2 November 2026, whatever Betfair's currency table says)"
 
 
 def slot_compact(slot: str) -> str:
@@ -285,11 +281,14 @@ class Orders:
         if price is not None and back_price is not None and back_stake is not None and back_price > 1 and back_stake > 0:
             size = money(back_stake * back_price / price, ROUND_DOWN)
             liability = money(size * (price - 1))
-            ok, why = min_bet_ok(size, price)
+            ok, why = min_size_ok(size)
             if not ok:
                 refusals.append(why)
             if course_cap is not None and size > course_cap:
-                refusals.append(f"size {size} is above the slip's Betfair cap of {course_cap} for the course")
+                refusals.append(
+                    f"size {size} is above the slip's Betfair cap of {course_cap} for the course, read as a cap on the lay's size; "
+                    "that reading is an assumption until the handover with Mark (Claude Strategy reads the cap as the Betfair BACK stake at a course)"
+                )
             per_order = Decimal(str(values["caps"]["per_order_at_risk_gbp"]))
             if liability > per_order:
                 refusals.append(f"liability {liability} is above the per-order cap of {money(per_order)} at risk")

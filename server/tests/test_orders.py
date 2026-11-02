@@ -24,7 +24,7 @@ from app.orders import (
     customer_order_ref,
     first_number,
     is_tick,
-    min_bet_ok,
+    min_size_ok,
     order_key,
     place_request,
     strategy_ref,
@@ -110,13 +110,15 @@ def test_numbers_are_read_from_the_slips_cells():
     assert first_number("") is None and first_number(None) is None and first_number("n/a") is None
 
 
-def test_minimum_bet_is_betfairs_rule_from_the_librarys_table():
-    ok, _ = min_bet_ok(D("2.86"), D("1.75"))
+def test_the_minimum_size_is_two_pounds_for_any_order_by_ruling():
+    ok, why = min_size_ok(D("2.86"))
+    assert ok and "at or above the minimum of 2.00" in why
+    ok, why = min_size_ok(D("2.00"))
     assert ok
-    ok, why = min_bet_ok(D("0.50"), D("1.75"))
-    assert not ok and "below Betfair's minimum" in why and "payout" in why
-    ok, why = min_bet_ok(D("0.50"), D("50"))  # payout 25.00, at or above the minimum payout
-    assert ok and "payout" in why
+    ok, why = min_size_ok(D("1.99"))
+    assert not ok and why == "size 1.99 is below the minimum of 2.00 an order (Charles's ruling of 2 November 2026, whatever Betfair's currency table says)"
+    ok, why = min_size_ok(D("0.50"))  # Betfair's payout rule would allow this at a long price; the ruling does not
+    assert not ok
 
 
 def test_references_name_fb13_the_date_the_slot_and_the_line():
@@ -175,11 +177,18 @@ def test_build_names_every_reason_it_would_refuse():
     o = orders.build(line(price="evens", stake="-1"), DAY, markets(), NOW)
     assert any(r.startswith("back price not read") for r in o["refusals"]) and any(r.startswith("back stake not read") for r in o["refusals"])
     o = orders.build(line(cap="£2"), DAY, markets(), NOW)
-    assert "size 2.86 is above the slip's Betfair cap of 2 for the course" in o["refusals"]
+    assert o["refusals"] == [
+        "size 2.86 is above the slip's Betfair cap of 2 for the course, read as a cap on the lay's size; "
+        "that reading is an assumption until the handover with Mark (Claude Strategy reads the cap as the Betfair BACK stake at a course)"
+    ]
     o = orders.build(line(cap="n/a"), DAY, markets(), NOW)
     assert "Betfair cap not read as an amount: 'n/a'" in o["refusals"]
     o = orders.build(line(stake="0.5"), DAY, markets(), NOW)
-    assert any("below Betfair's minimum" in r for r in o["refusals"])
+    assert o["refusals"] == ["size 0.47 is below the minimum of 2.00 an order (Charles's ruling of 2 November 2026, whatever Betfair's currency table says)"]
+    o = orders.build(line(stake="2"), DAY, markets(), NOW)  # 2 x 1.67 / 1.75 = 1.90: a stake of 2 is too small to lay at these prices
+    assert o["refusals"] == ["size 1.90 is below the minimum of 2.00 an order (Charles's ruling of 2 November 2026, whatever Betfair's currency table says)"]
+    o = orders.build(line(stake="3"), DAY, markets(), NOW)  # Charles's ruling 7: about 3 at the slip's prices gives a lay of at least 2.00 under 5.00 at risk
+    assert o["status"] == "ok" and o["size"] == "2.86" and o["liability"] == "2.15"
     late = datetime(2026, 11, 2, 13, 0, tzinfo=timezone.utc)
     o = orders.build(line(), DAY, markets(), late)
     assert o["refusals"] == ["the race started at 13:00 UK; nothing is laid in play"]

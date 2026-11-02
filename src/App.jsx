@@ -370,6 +370,11 @@ function ServerPanel({ date, lines, onResolutions }) {
             Clear the session state
           </button>
         )}
+        {status && (
+          <button type="button" onClick={() => control(status.placing_enabled ? 'kill' : 'resume')} disabled={!!busy}>
+            {busy === 'kill' || busy === 'resume' ? 'Storing…' : status.placing_enabled ? 'Kill switch: stop all placing' : 'Resume placing'}
+          </button>
+        )}
         <button type="button" onClick={readMarkets} disabled={!!busy}>
           {busy === 'markets' ? 'Reading…' : `Read the markets for ${date}`}
         </button>

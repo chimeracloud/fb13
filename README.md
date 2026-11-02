@@ -317,7 +317,8 @@ Charles's rules of 2 November 2026, as built:
   named), a runner twice. What was asked and answered is stored under
   `resolutions/<date>/`.
 - **The page's server panel** (above the lines): refresh the status; log in,
-  log out, clear the session state; read the day's markets (count, first and
+  log out, clear the session state; the kill switch and its inverse (0.7.1:
+  "Kill switch: stop all placing" / "Resume placing", whichever applies); read the day's markets (count, first and
   last off, venues, every market with its runners and ids); resolve the
   parsed lines on the page for the selected date. Each line then shows a chip,
   "Betfair: resolved" with the market id, runner and selection id, or
@@ -347,10 +348,10 @@ Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
 - **Refusals, each named**: the kill switch; the stored mode (real needs the
   stored mode real and Charles's Access confirmation); the line not resolved;
   the race already started; a cell that does not read as a number; a lay
-  target outside 1.01 to 1000; a size below Betfair's minimum-bet rule (size
-  at or above the currency minimum, or payout at or above the minimum payout,
-  from betfairlightweight's currency table); a size above the slip's Betfair
-  cap for the course; liability above the per-order cap; the day's money at
+  target outside 1.01 to 1000; a size below £2.00, the minimum for any order
+  (Charles's ruling of 2 November 2026, whatever Betfair's currency table
+  says); a size above the slip's Betfair cap for the course (an assumption,
+  below, and the refusal says so); liability above the per-order cap; the day's money at
   risk for the mode above the per-day cap; the line already placed that day in
   that mode (cancelled or not). Paper and real are counted separately.
 - **Paper** builds the exact order, records it under `orders/<date>/` in the
@@ -369,13 +370,24 @@ Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
   are `FB13-TEST`; it is never a line's order; its 2.00 counts toward the real
   day's money at risk. The page's server panel carries its controls, enabled
   only when the stored mode is real.
-- **Choices made by the build agent, awaiting Charles's ruling**: tick down,
-  never up; the slip's Betfair cap read as the most that may be laid at that
-  course in backer's stake; a line placed once that day stays placed,
-  cancelled or not; the day's money at risk counts cancelled orders and the
-  test order; the minimum-bet figures from betfairlightweight 2.24.0 (GBP
-  minimum size 1, minimum payout 10; Betfair's pages show 1 in one version
-  and 2 in another).
+- **Charles's rulings of 2 November 2026 on the builder's choices.**
+  Approved: the lay target moves down to the tick, never up; a line placed
+  once that day in that mode is never placed again, cancelled or not; the
+  day's money at risk counts every placed order, cancelled or not, and the
+  test order's £2; nothing is laid once the race has started; the caps stay
+  at £5 an order and £10 a mode a day. Ruled: the minimum size is £2.00 for
+  any order, whatever Betfair's currency table says. **Assumption, kept for
+  now at Charles's word:** the slip's "Betfair cap" for a course is read as
+  the most that may be laid at that course in backer's stake (the lay's
+  size). Claude Strategy's reading of Mark's slip note is that the cap limits
+  the Betfair BACK stake at a course, the excess going to bookmakers, so it
+  may not apply to lays at all. It is confirmed at the handover with Mark;
+  until then a lay refused for it says so in the refusal.
+- **Paper trials under the caps** (Charles's ruling 7): record the back leg at
+  a stake that gives a lay of at least £2 and a liability under £5, about £3 at
+  the prices on the slip (at 1.67 backed and 1.75 laid, £3 gives a lay of
+  £2.86 with £2.15 at risk; £2 gives £1.90, below the minimum; £50 gives
+  £35.78 at risk, above the cap).
 
 ### Endpoints
 
@@ -575,11 +587,12 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   "Chelmsford" is flagged, not guessed, with the venue named. Which names
   Mark's slip uses is known only from real slips; the first real resolve at
   08:00 UK on 2 November 2026 is the test.
-- **The build agent's order choices** (step 3, above) stand until Charles
-  rules: tick down; the Betfair cap as size; placed once a day; the day's
-  risk counting cancelled orders; the minimum-bet figures from the library's
-  table. With the caps at 5.00 an order, a slip line at the page's default
-  stake of 50 is refused in paper too (liability 35.78 at 1.67/1.75).
+- **The Betfair cap's meaning** is an assumption (step 3, above): read as a
+  cap on the lay's size until the handover with Mark; Claude Strategy reads
+  it as a cap on the Betfair BACK stake at a course. A lay refused for it
+  says so. With the caps at £5 an order, a slip line at the page's default
+  stake of 50 is refused in paper too (£35.78 at risk at 1.67/1.75); Charles's
+  ruling 7 is a recorded stake of about £3 for paper trials.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0.

@@ -2,6 +2,33 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.7.1] — 2026-11-02 — Charles's rulings on step 3's choices
+
+### Changed
+- Charles's rulings of 2 November 2026 on the choices flagged in 0.7.0:
+  approved the tick down, never up; a line placed once a day in a mode is
+  never placed again; the day's money at risk counts every placed order,
+  cancelled or not, and the £2 test order; nothing laid once the race has
+  started; the caps stay at £5 an order and £10 a mode a day.
+- **Minimum size £2.00 for any order**, whatever Betfair's currency table
+  says (ruling 5). `server/app/orders.py` no longer reads betfairlightweight's
+  currency table; a size below £2.00 is refused in words. At the slip's
+  prices a recorded back stake of £2 gives a lay of £1.90, refused; £3 gives
+  £2.86 with £2.15 at risk (ruling 7: about £3 for paper trials).
+- **The Betfair cap stays an assumption** (ruling 2): kept as a cap on the
+  lay's size for now, written in the README as an assumption with Claude
+  Strategy's reading (a cap on the Betfair BACK stake at a course, the excess
+  to bookmakers, so perhaps not applying to lays), confirmed at the handover
+  with Mark. A lay refused for it now says so in the refusal.
+- The page's server panel gains the kill switch and its inverse ("Kill
+  switch: stop all placing" / "Resume placing"), so placing can be enabled
+  for the test order and stopped after it without leaving the page.
+
+### Recorded for Claude Strategy
+- The reading of Mark's "Betfair cap" note differs between the build (a lay
+  size cap, as an assumption) and Claude Strategy (a Betfair BACK stake cap).
+  Settled at the handover with Mark.
+
 ## [0.7.0] — 2026-11-02 — version 1, step 3: the order builder, paper first; the test order
 
 ### Why

@@ -1,11 +1,12 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 07:05 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 07:38 UTC, by the
 build agent, from the clock.
 
 **State:** the first login and catalogue read succeeded (Charles, 06:41 and
 06:42 UTC); the records are read back and the catalogue kept as a fixture.
-Step 3 is built, paper only, committed locally as 0.7.0, not pushed: the
+Step 3 is built, paper only, committed locally as 0.7.0 and, with Charles's
+rulings applied, 0.7.1, not pushed: the
 order builder (LAY at the tick below the lay target, size from the ruling,
 LAPSE, one order per line, every refusal named), the paper ledger under
 `orders/<date>/`, the real path behind the stored mode and the kill switch,
@@ -16,18 +17,22 @@ placing disabled. Real mode stays off until Charles writes the settings
 version himself.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- The word to push 9d2bb50 (status) and the 0.7.0 commit. The server push
-  replaces the instance and drops the Betfair session; he logs in again.
-- At 08:00 UK: paste the real 08:00 slip, Resolve the lines on this page.
-- Rulings on the choices flagged in CHANGELOG 0.7.0 (tick down; the Betfair
-  cap as size; placed once a day; the day's risk counts cancelled orders; the
-  minimum-bet rule from the library's table).
-- The settings version for real mode, then "go" for the test order.
+- Charles pastes the 08:00 slip into the current instance and presses
+  Resolve first. Then his word to push: 9d2bb50 (status), a011c96 (0.7.0)
+  and the 0.7.1 rulings commit together. The server push replaces the
+  instance and drops the Betfair session; he logs in again.
+- After the deploy: Charles writes the settings version for real mode (the
+  exact object and command are in the report of 2 November), then the £2
+  test order from the page, with the sentence typed; then the kill switch.
+- The Betfair cap's meaning, confirmed at the handover with Mark.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** read the three Betfair records back; kept the catalogue as
-`server/tests/fixtures/catalogue-2026-11-02.json`; built step 3 with tests
-(95 pytest, 109 vitest, none run here); updated README and CHANGELOG.
+**Last did:** applied Charles's rulings on step 3 (minimum £2.00 an order;
+the Betfair cap kept as an assumption and said so in the refusal; the
+approved choices recorded; kill and resume buttons on the panel), 0.7.1,
+committed locally. Before that: read the three Betfair records back, kept
+the catalogue as a fixture, built step 3 (95 pytest, 109 vitest, none run
+here).
 
 **Found and reported, not acted on:**
 - The pages.dev addresses serve the page without Access. The API refuses
