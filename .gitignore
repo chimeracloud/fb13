@@ -14,3 +14,9 @@ reference/
 .DS_Store
 .vscode/
 .idea/
+
+# Python server
+server/**/__pycache__/
+server/.pytest_cache/
+*.pyc
+.venv/

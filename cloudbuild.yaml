@@ -1,0 +1,81 @@
+# FB13 trade slip API: push to main -> this file -> Cloud Run fb13-trade-slip-api.
+#
+# Run by the trigger fb13-main (chimeracloud/fb13, branch ^main$, created with
+# --build-config and never the console wizard), filtered to server/** and this
+# file, so a page-only commit does not redeploy the server. The tests run
+# first, in the cloud, on the fleet's Python; the image is built only when they
+# pass; the deploy carries every flag the service must have, so the live
+# service always matches this file. Nothing runs on Charles's machine.
+#
+# Access: CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD identify the Cloudflare
+# Access application in front of fb13.chimerasportstrading.com. Neither is a
+# secret (the audience is in every token). Empty, the server refuses every
+# request but /health and /ready. Charles supplies them; they are then set
+# here, in the repository, not in the console.
+
+steps:
+  - id: test
+    name: python:3.12-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        python --version
+        pip install --no-cache-dir --quiet -r server/requirements.txt -r server/requirements-dev.txt
+        cd server && python -m pytest
+
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - server/Dockerfile
+      - --build-arg
+      - FB13_COMMIT=$SHORT_SHA
+      - -t
+      - europe-west2-docker.pkg.dev/chiops/fb13/fb13-trade-slip-api:$SHORT_SHA
+      - .
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - europe-west2-docker.pkg.dev/chiops/fb13/fb13-trade-slip-api:$SHORT_SHA
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - fb13-trade-slip-api
+      - --image=europe-west2-docker.pkg.dev/chiops/fb13/fb13-trade-slip-api:$SHORT_SHA
+      - --region=europe-west2
+      - --platform=managed
+      - --service-account=fb13-sa@chiops.iam.gserviceaccount.com
+      # One instance, so that from step 2 there is one Betfair session, never two
+      # on one login; and so an order can never be built twice by two instances.
+      - --min-instances=1
+      - --max-instances=1
+      - --cpu=1
+      - --memory=512Mi
+      - --concurrency=20
+      # Server-sent events hold a request open for up to five minutes.
+      - --timeout=600
+      - --port=8080
+      # The page reaches this service through its own hostname's Pages Function.
+      # The gate is the Cloudflare Access token, verified on every request
+      # (server/app/access.py), so the invoker IAM check is off (Charles, 2 Nov 2026).
+      - --no-invoker-iam-check
+      - --ingress=all
+      # ^|^ makes | the separator, so a value may hold a comma.
+      - --set-env-vars=^|^GOOGLE_CLOUD_PROJECT=chiops|FB13_CONFIG_BUCKET=chiops-fb13-config|FB13_ORDERS_BUCKET=chiops-fb13-orders|FB13_COMMIT=$SHORT_SHA|CF_ACCESS_TEAM_DOMAIN=${_CF_ACCESS_TEAM_DOMAIN}|CF_ACCESS_AUD=${_CF_ACCESS_AUD}
+      - --labels=app=fb13,unit=fb13
+
+substitutions:
+  _CF_ACCESS_TEAM_DOMAIN: ''
+  _CF_ACCESS_AUD: ''
+
+options:
+  logging: CLOUD_LOGGING_ONLY

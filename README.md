@@ -1,6 +1,6 @@
 # FB13 Trade slip
 
-**Chimera Sports Trading · First Build 13 · version 0 · records only.**
+**Chimera Sports Trading · First Build 13 · version 1, step 1 · the page records; the server shell is up; nothing places yet.**
 
 Strategy concept and the trade slip concept: Mark Insley. Architecture and build: Charles Duckitt.
 
@@ -12,6 +12,12 @@ did in minutes, with every step kept.
 has no server, no login to any bookmaker or exchange, no credential anywhere,
 and makes no network request beyond loading itself. Storage is the browser's
 own, so this version is a worksheet and not yet the record.
+
+**Version 1 adds a small server** (Charles's prompt of 1 November 2026): a
+Python service on Cloud Run in London that will build, place, cancel and check
+Betfair orders behind a Place button on each slip line, paper by default. Step
+1 of five is built: the settings, the caps, the kill switch and the admin
+shell. **It makes no Betfair call.** See "Version 1: the server" below.
 
 ## Status
 
@@ -25,7 +31,13 @@ own, so this version is a worksheet and not yet the record.
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0 |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1 |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 86 tests, run by every Pages build before `vite build` |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 94 tests (8 of them for the Pages Function), run by every Pages build before `vite build` |
+| v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
+| v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Committed 2 November 2026, 0.5.0. Deploy waits for Charles to connect the repository in Cloud Build and for the trigger `fb13-main` |
+| v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Not started. The first login waits for Charles's word |
+| v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
+| v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
+| v1 5 | Tests from real data | Server tests written alongside step 1: 47 cases, run by every Cloud Build before the image is built |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -91,7 +103,9 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
 ## What it does not do
 
-- It places no bet, logs in nowhere, scrapes nothing and holds no credential.
+- The page places no bet, logs in nowhere, scrapes nothing and holds no
+  credential. The server, at step 1, makes no Betfair call and has read no
+  secret: it holds the settings and the kill switch.
 - It does not decode the bookmaker codes on the slip (B3, WH, LD, CE, BY, FB,
   SI, SX, BTT, FR, Betano, BetMGM, Midnite, and UN, 10bet, PP, LiveScore Bet
   and Virgin Bet, seen in real data on 30 October 2026). They are shown exactly
@@ -99,7 +113,8 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   comma, and only to offer them in the "where" field. Charles holds the
   mapping.
 - It sends nothing anywhere: no analytics, no third party script, no CDN, no
-  fonts fetched. The only requests are for its own files.
+  fonts fetched. The only requests are for its own files. From step 4 the page
+  will call `/api/*` on its own hostname, and nothing else.
 - It never edits or deletes a history entry.
 - It does not parse the text below the table (the lay rules). That is kept as
   a note.
@@ -125,6 +140,178 @@ row with a different number of cells, a table missing one of the seven headers,
 or, without a header, a row whose first cell is not a race time, is flagged and
 shown raw.
 
+## Version 1: the server
+
+Charles's prompt of 1 November 2026, "FB13 version 1: Betfair order placing,
+paper first", with his rulings of 2 November. FB13 stays a standalone First
+Build: nothing shared with another unit, no recorders, no FSU dependency.
+
+### Safety, as built so far
+
+- **Paper unless the stored settings say real.** `mode` has no API path at
+  all: Charles changes it by writing a new settings version to the bucket, by
+  his own word. The API rejects a body that names it. Paper builds the exact
+  order, records it and sends nothing (step 3).
+- **Caps on money at risk**: the stake for a back, the liability for a lay.
+  Defaults £5 at risk an order and £10 a mode a London day; both stored
+  settings, both apply in both modes and are counted separately per mode. An
+  order above either is refused (step 3 counts; step 1 stores).
+- **The kill switch**: `POST /admin/control/kill` stops all placing, paper and
+  real, at once, and is stored before it is applied. `resume` is the separate
+  inverse. Placing starts **disabled** and stays so until an operator resumes,
+  so nothing can place because a code default said so. Cancelling open orders
+  will be a separate, deliberate call (step 3).
+- **Real mode stays off until Charles confirms that Cloudflare Access covers
+  the page.** `page_access_confirmed` is a second protected field, false until
+  he writes it true. Real placing needs both fields.
+- **Every change to the settings is a new object** with who, when and why;
+  nothing is overwritten and the service account cannot delete.
+- **No secret anywhere in this repository, in a log or in an answer.** The
+  server names the secrets it may read (names only) and has read none.
+
+### The hostname and the gate
+
+One hostname: the page's. The page will call `/api/*` on
+`fb13.chimerasportstrading.com`; the Pages Function forwards it to the Cloud
+Run service with the Access token; the server verifies the token on every
+request (RS256 against the team's published keys at
+`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, issuer, audience,
+expiry) and then requires the token's email to be on the stored operator list.
+No token, 401. Unconfigured, 503. Not an operator, 403. Only `/health` and
+`/ready` answer without a token. Cloud Run's invoker check is off because this
+is the gate (Charles's ruling 1).
+
+The server needs two values from the Access application: the team domain and
+the application's audience tag. Both go into `cloudbuild.yaml` as
+`_CF_ACCESS_TEAM_DOMAIN` and `_CF_ACCESS_AUD`. Charles supplies them.
+
+### The stored settings
+
+One JSON object per change in `gs://chiops-fb13-config/settings/v/`, named by
+its time, create-only; the newest is in force. Hydrated at start and re-read
+every five seconds, so the stored value governs.
+
+```json
+{
+  "values": {
+    "schema": 1,
+    "mode": "paper",
+    "page_access_confirmed": false,
+    "placing_enabled": false,
+    "caps": {"per_order_at_risk_gbp": 5.0, "per_day_at_risk_gbp": 10.0},
+    "operators": []
+  },
+  "updated_at": "2026-11-02T12:00:00.000Z",
+  "updated_by": "who",
+  "reason": "why",
+  "change": "config, kill, resume, or by hand",
+  "previous": "the object this replaces, or null"
+}
+```
+
+| Field | Changed by |
+| --- | --- |
+| `mode`, `page_access_confirmed` | Charles only, by hand (below). No API path |
+| `placing_enabled` | `POST /admin/control/kill` and `/resume`, by an operator |
+| `caps`, `operators` | `PUT /admin/config`, by an operator |
+
+A stored value that is not valid falls to the safe side (paper, disabled, the
+default caps, nobody signed in) and is reported in `/admin/config` and
+`/status`, never silently.
+
+**By hand.** To change a protected field, or to seed the first operators,
+Charles (or the build agent at his word) writes a new object with a name later
+than the newest, for example with `gcloud storage cp` from a local file to
+`gs://chiops-fb13-config/settings/v/<13-digit-ms>-<8-hex>.json`, carrying the
+full `values` object and `"updated_by": "charles"`. The server picks it up
+within five seconds. Nothing is deleted or overwritten.
+
+### Endpoints
+
+Thirteen, per CHI-POL-008 with its 18 September 2026 amendment.
+
+| Endpoint | What | Token |
+| --- | --- | --- |
+| `GET /health` | liveness | open |
+| `GET /ready` | storage answers and settings loaded; 503 otherwise | open |
+| `GET /info` | name, version, commit, Python, pins, credential names (never values), Access configuration | operator |
+| `GET /metrics` | Prometheus text | operator |
+| `GET /status` | one screen of plain text | operator |
+| `GET /admin/status` | health, version, uptime, mode, placing, caps | operator |
+| `GET /admin/config` | the settings in force, with where they came from | operator |
+| `PUT /admin/config` | `{"caps": {...}, "operators": [...], "reason": "..."}`; 422 for `mode` or anything else | operator |
+| `GET /admin/stats` | counters; order counts begin at step 3 | operator |
+| `GET /admin/activity` | the last 100 events, newest first | operator |
+| `GET /admin/events` | the same, live, server-sent events, five minutes a request | operator |
+| `GET /admin/incidents` | `[]` until the Incident FSU exists (CHI-POL-043) | operator |
+| `POST /admin/control/{kill,resume}` | the kill switch and its inverse; `{"reason": "..."}` optional; any other action 404 | operator |
+
+### Storage
+
+| Bucket | Holds | Created |
+| --- | --- | --- |
+| `gs://chiops-fb13-config` | `settings/v/` versions; `activity/<date>/` events | 2 November 2026 |
+| `gs://chiops-fb13-orders` | from step 3: order events, resolutions, every Betfair request and response | 2 November 2026 |
+
+Both: London, uniform access, public access prevented, object versioning on.
+`fb13-sa` holds `roles/storage.objectCreator` and `roles/storage.objectViewer`
+on each and nothing else, so it can create and read, never overwrite or delete.
+Append-only is enforced by IAM, not only by code.
+
+### Credentials
+
+The server reads credentials through one interface, `get_credential(name)`
+(CHI-POL-040); the interim implementation behind it reads Secret Manager in
+`chiops`. Five existing secrets, by Charles's ruling 7, no new ones:
+
+| Logical name | Secret | Also readable by |
+| --- | --- | --- |
+| `betfair_app_key` | `betfair-app-key-delayed` | fsu1b-sa |
+| `betfair_cert_pem` | `betfair-cert-pem` | the default compute SA, backtest-tool, chimera-flumine-sa, fb11-sa, fb9-sa, fsu100, fsu1a-ingest-sa, fsu1b-sa, fsu9-sa |
+| `betfair_key_pem` | `betfair-key-pem` | the same |
+| `betfair_username` | `betfair-username` | the same |
+| `betfair_password` | `betfair-password` | the same |
+
+`fb13-sa` was granted `roles/secretmanager.secretAccessor` on these five on
+2 November 2026; nothing else on them changed. No value has been read, and no
+value is ever logged, stored or returned.
+
+**Which key.** Charles ruled on 2 November 2026: the Delayed key for all of
+FB13's REST work (resolve, place, cancel, list), because CHI-PRO-003 is filed
+and later than the document that said otherwise, and because it avoids a
+session clash with the Live key's users. Betfair's own documentation was
+checked that day ("Application Keys", developer docs): the comparison table
+gives "Bet Placement (Live Exchange): Yes" for the Delayed key; the prose says
+"The Delayed App Key operates on the live (production) Betfair Exchange and
+not a testbed/sandbox environment"; and "Complete any testing using your
+Delayed Application key" is the step before a Live key is activated. So a
+Delayed key places orders. Its price data is delayed and limited to three
+levels, which FB13 does not read: the lay price comes from the slip. The Live
+key is not named anywhere in this repository and is never used without
+Charles's word.
+
+**Recorded, not acted on** (the prompt asks for this): the project's notes say
+a Live application key with no wagering activity can be deactivated by
+Betfair. FB13 does nothing about it.
+
+**Sessions.** FB13 holds its own login and never borrows another service's
+session token (the 17 May 2026 conflict). The first login is step 2 and waits
+for Charles's word, after racing (CHI-BRF-002: never open a Betfair session
+without asking).
+
+### Cloud resources
+
+Created on 2 November 2026 by the build agent at Charles's approval; nothing
+else in the project was changed.
+
+| Resource | Name |
+| --- | --- |
+| Service account | `fb13-sa@chiops.iam.gserviceaccount.com` |
+| Buckets | `chiops-fb13-config`, `chiops-fb13-orders` (europe-west2) |
+| Artifact Registry | `europe-west2-docker.pkg.dev/chiops/fb13`, image `fb13-trade-slip-api` |
+| Cloud Run service | `fb13-trade-slip-api`, europe-west2 (created by the first build) |
+| Cloud Build trigger | `fb13-main`: `chimeracloud/fb13`, `^main$`, `cloudbuild.yaml`, filtered to `server/**` and `cloudbuild.yaml`; created with `--build-config` once Charles has connected the repository |
+
 ## Where it runs
 
 Cloudflare Pages, at **fb13.chimerasportstrading.com** behind Cloudflare
@@ -147,6 +334,27 @@ built or tested on Charles's machine. Pages also hands the build the commit it
 is building as `CF_PAGES_COMMIT_SHA`; `vite.config.js` stamps its first seven
 characters into the page. Nothing to set.
 
+**The Pages Function.** `functions/api/[[path]].js` runs for every request to
+`fb13.chimerasportstrading.com/api/*` and for nothing else; the static page is
+served as before. It forwards the request to the Cloud Run service with the
+`Cf-Access-Jwt-Assertion` header Cloudflare Access puts on every request it
+lets through, and returns the answer. Without that header it answers 401 and
+the server is never called. The origin is Cloud Run's fixed URL for the
+service, `https://fb13-trade-slip-api-991649774709.europe-west2.run.app`; the
+Pages variable `FB13_API_ORIGIN` overrides it should the service move. Nothing
+to set today. Pages picks the `functions/` directory up on its own.
+
+**The server.** Cloud Run, `fb13-trade-slip-api`, `europe-west2` (London:
+Betfair blocks South African addresses), project `chiops`, service account
+`fb13-sa`. Deployed by Cloud Build from `cloudbuild.yaml` on every push to
+`main` that touches `server/**` or that file (trigger `fb13-main`). The tests
+run first, in the cloud, on Python 3.12; the image is built only when they
+pass; the deploy carries every flag the service must have, so the live service
+always matches the file. One instance, minimum and maximum, so that from step
+2 there is one Betfair session and an order can never be built twice by two
+instances. Its invoker IAM check is off: the Access token, verified on every
+request, is the gate (Charles, 2 November 2026).
+
 ## Dependencies
 
 Exact pins, each released at least two weeks before 30 October 2026. Nothing
@@ -162,6 +370,27 @@ else is added without Charles.
 
 Node 22 (CHI-BRF-004). jsdom 30 needs Node 22.22.2 or later; Pages' default
 Node 22 build is 22.23.4 as of 30 October 2026.
+
+Server: Python 3.12, the fleet standard (Charles, 2 November 2026). Exact
+pins, each released at least two weeks before 2 November 2026 and approved by
+Charles that day. betfairlightweight ships in the image from step 1 so the
+build is proven before step 2 uses it.
+
+| Package | Version | Released |
+| --- | --- | --- |
+| fastapi | 0.150.0 | 2026-10-19 |
+| uvicorn | 0.54.0 | 2026-09-25 |
+| pydantic | 2.14.1 | 2026-10-11 |
+| google-cloud-storage | 3.17.1 | 2026-10-15 |
+| google-cloud-secret-manager | 2.31.0 | 2026-10-01 |
+| PyJWT | 2.15.1 | 2026-09-28 |
+| cryptography | 50.0.2 | 2026-09-30 |
+| betfairlightweight | 2.24.0 | 2026-09-04 |
+| pytest (tests only) | 9.1.1 | 2026-06-19 |
+| httpx (tests only: FastAPI's test client needs it) | 0.28.1 | 2024-12-06 |
+
+Direct dependencies are pinned; what they pull in resolves at build time, as
+on the page. No lock file yet (the same decision as the page, 30 October 2026).
 
 ## Known risks
 
@@ -181,6 +410,25 @@ Node 22 build is 22.23.4 as of 30 October 2026.
   on an iPhone has not yet been tried and may hand the page something else.
   The "What was pasted" section will show it. Flagged rows are shown raw,
   never guessed.
+- **Cloudflare Access was not covering the page at 01:24 UTC on 2 November
+  2026**: `https://fb13.chimerasportstrading.com/` answered 200 to a plain
+  request from Cape Town with no redirect to a login. Charles said so on
+  1 November. Until Access covers the page, the Pages Function receives no
+  token and refuses every `/api/*` call, and real mode stays off by rule.
+- **The Access team domain and audience are not yet known to the server.**
+  Until Charles supplies them and they are set in `cloudbuild.yaml`, the server
+  refuses everything but `/health` and `/ready` with 503.
+- **The operator list starts empty.** Nobody can sign in until Charles names
+  the operators' emails and the first settings version is written.
+- **One always-on instance costs money** (min-instances 1, 1 CPU, 512 MiB,
+  CPU throttled between requests). The reason is one Betfair session from step
+  2; Charles can set it to 0 in `cloudbuild.yaml` at the cost of a cold start
+  and a fresh login each time.
+- **The Delayed key is shared.** fsu1b-sa may also read `betfair-app-key-delayed`.
+  FB13 keeps its own login session and never borrows another's, but Betfair
+  may still treat two sessions on one key as it did on 17 May, 31 July and 11
+  August 2026, whose cause the Bible records as unidentified. The first login
+  waits for Charles's word (CHI-BRF-002).
 
 ## Repository layout
 
@@ -199,7 +447,24 @@ src/styles.css        mobile first, system fonts, no fetches
 src/*.test.js         tests, run by the Pages build before vite build
 src/fixtures/         real pastes, kept as fixtures; nothing invented
 docs/status/latest.md status, overwritten whenever the unit reports (CHI-POL-053)
-reference/            read-only clones (the Bible), never committed
+reference/            read-only clones (the Bible, FB11), never committed
+
+functions/api/[[path]].js   the Pages Function: /api/* to the server, with the Access token
+src/pages-function.test.js  its tests (vitest, Node environment)
+server/app/main.py          the FastAPI app: the thirteen endpoints, the gate, the middleware
+server/app/settings.py      the stored settings: mode, caps, kill switch, operators; create-only versions
+server/app/access.py        Cloudflare Access token verification and the operator check
+server/app/activity.py      the append-only activity log and the server-sent events
+server/app/storage.py       create-only JSON objects in GCS, and a memory store for tests
+server/app/credentials.py   get_credential(name): Secret Manager behind one interface (CHI-POL-040)
+server/app/metrics.py       counters and the Prometheus text
+server/app/models.py        request bodies, Pydantic v2, extra forbidden
+server/app/logconfig.py     JSON logs with severity, service_name, trace_id
+server/app/version.py       the version from package.json, the commit from Cloud Build
+server/tests/               pytest, run by Cloud Build before the image is built
+server/requirements.txt     runtime pins; requirements-dev.txt the test-only pins; pytest.ini; Dockerfile
+cloudbuild.yaml             test, build, push, deploy; every flag the service must have
+.dockerignore               the image takes server/app, server/requirements.txt and package.json only
 ```
 
 ## Policies
@@ -211,10 +476,30 @@ reference/            read-only clones (the Bible), never committed
 - CHI-POL-047: STRATEGY NOTES sections below and in the CHANGELOG; only Claude
   Strategy writes into them.
 - CHI-POL-053: `docs/status/latest.md`, overwritten whenever the unit reports.
-- CHI-BRF-002: a First Build skips the admin shell. Version 0 has no server, so
-  there is no shell.
+- CHI-BRF-002 says a First Build skips the admin shell. Charles's version 1
+  prompt asks for it (step 1: "settings, caps, kill switch and the admin
+  shell"), so it is built, to CHI-POL-008 with its 18 September 2026 amendment
+  (thirteen endpoints). The conflict is recorded in the CHANGELOG for Claude
+  Strategy.
+- CHI-POL-008: the shell first, deployed and verified before any content. Step
+  1 is exactly that. `auto_start` has its FB13 form in `placing_enabled`, which
+  is false until an operator resumes, and the stored value governs.
+- CHI-POL-040: one credential interface, `get_credential(name)` in
+  `server/app/credentials.py`; the interim implementation reads Secret Manager.
+  Interim, recorded here and in the CHANGELOG.
+- CHI-POL-043: `GET /admin/incidents` returns an empty list until the Incident
+  FSU exists. Interim structure.
+- CHI-PRO-003 (24 August 2026) says the Live key is for the stream and the
+  Delayed key for orders; Chimera_CBI_Corrections_For_CC.txt, as summarised in
+  the prompt, said the opposite. Charles ruled on 2 November 2026: the Delayed
+  key for all of FB13's REST work. Recorded in the CHANGELOG for Claude
+  Strategy.
 - Node 22 per CHI-BRF-004. CHI-BRF-002 says 20; the conflict is recorded in the
   CHANGELOG for Claude Strategy.
+- Python 3.12 per Charles (2 November 2026), the fleet standard and what the
+  CHI-BRF-004 amendment will say. CHI-BRF-002 says "3.13. NOT 3.14" and
+  `python:3.12-slim` in the same row; CHI-BRF-004 says `python:3.13-slim`.
+  Recorded.
 
 ## STRATEGY NOTES
 

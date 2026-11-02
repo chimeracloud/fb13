@@ -1,0 +1,8 @@
+# The image takes server/app, server/requirements.txt and package.json. Nothing else.
+*
+!server
+!package.json
+server/tests
+server/requirements-dev.txt
+server/pytest.ini
+**/__pycache__

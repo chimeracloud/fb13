@@ -2,6 +2,110 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.5.0] — 2026-11-02 — version 1, step 1: the server shell
+
+### Why
+Charles's prompt of 1 November 2026 adds a small server to FB13 that will
+build, place, cancel and check Betfair orders behind a Place button on each
+line, paper by default. Step 1 is the shell: the settings, the caps, the kill
+switch and the admin endpoint set, deployed and verified before any Betfair
+call (CHI-POL-008, shell first). This commit makes no Betfair call.
+
+### Added
+- `server/`: a FastAPI service for Cloud Run in europe-west2, Python 3.12,
+  with the thirteen endpoints of CHI-POL-008 (18 September 2026 amendment):
+  the Set 1 admin endpoints, `/admin/incidents` as an empty-list stub, and the
+  five observability endpoints. Structured JSON logs with severity,
+  service_name and trace_id. Pydantic v2 bodies with `extra="forbid"`.
+- The stored settings (`server/app/settings.py`): mode, `page_access_confirmed`,
+  `placing_enabled`, the two caps, the operators. One create-only object per
+  change in `gs://chiops-fb13-config/settings/v/`, newest in force, re-read
+  every five seconds; the stored value governs. `mode` and
+  `page_access_confirmed` have no API path. Defaults: paper, not confirmed,
+  placing disabled, £5 at risk an order, £10 a mode a London day, no operators.
+- The kill switch: `POST /admin/control/kill` and `/resume`, stored before
+  applied, always recorded, even when pressed twice.
+- The gate (`server/app/access.py`): the Cloudflare Access token on every
+  request, verified against the team's keys, issuer, audience and expiry, then
+  the operator list. 401, 503 or 403; `/health` and `/ready` open.
+- The activity log (`server/app/activity.py`): append-only objects under
+  `activity/<date>/`, a ring in memory, server-sent events on `/admin/events`,
+  the newest fifty reloaded at start.
+- `server/app/credentials.py`: `get_credential(name)` per CHI-POL-040, reading
+  Secret Manager behind one interface. Five logical names, no value read.
+- `server/app/storage.py`: create-only JSON objects (`if_generation_match=0`),
+  with a memory store for tests. The service account cannot delete or
+  overwrite in any case.
+- `functions/api/[[path]].js`: the Pages Function that forwards
+  `fb13.chimerasportstrading.com/api/*` to the Cloud Run service with the
+  `Cf-Access-Jwt-Assertion` header, and refuses a request without one.
+- `cloudbuild.yaml`: test on Python 3.12, build, push to
+  `europe-west2-docker.pkg.dev/chiops/fb13`, deploy with every flag (one
+  instance, 512 MiB, invoker check off, the two buckets, the Access values as
+  substitutions). `server/Dockerfile`, `.dockerignore`.
+- Tests: 47 pytest cases (version, storage, settings, access, activity, the
+  app end to end with a signed test token) run by Cloud Build before the image
+  is built; 8 vitest cases for the Pages Function, run by the Pages build. 94
+  vitest cases in all.
+- Cloud resources, created 2 November 2026 at Charles's approval: `fb13-sa`,
+  `chiops-fb13-config`, `chiops-fb13-orders`, the Artifact Registry
+  repository `fb13`, create-and-read bindings on the buckets, and
+  `secretAccessor` for `fb13-sa` on `betfair-app-key-delayed`,
+  `betfair-cert-pem`, `betfair-key-pem`, `betfair-username`,
+  `betfair-password`. Nothing else changed on those secrets.
+
+### Changed
+- `package.json` to 0.5.0; the server reads its version from it at build time.
+- `.gitignore`: Python caches.
+- README: version 1 sections. The page is unchanged in behaviour.
+
+### Decided by Charles, 2 November 2026
+- Hostname and auth: the Pages Function route; the server verifies issuer and
+  audience and accepts only emails on the stored operator list; Cloud Run open
+  at IAM level because the token is the gate.
+- Python 3.12. betfairlightweight 2.24.0 and the other pins approved.
+- The DELAYED key for all REST work. Checked against Betfair's Application
+  Keys page the same day: "Bet Placement (Live Exchange): Yes" for the Delayed
+  key; it "operates on the live (production) Betfair Exchange". Not a stop.
+- Caps on money at risk: stake for a back, liability for a lay; £5 an order,
+  £10 a mode a London day; both modes, counted separately.
+- The Place button (step 4) builds a LAY limit order at the slip's lay target
+  moved to a valid tick, size = back stake × back price ÷ lay price, enabled
+  only once the line's back leg is recorded as Placed; the confirm panel shows
+  lay stake and liability; persistence LAPSE; the slip's Betfair cap per course
+  respected; one order per line.
+- First login: ask first; after racing; not the Live key unless he says so.
+- Names approved; no new secrets; the five existing ones granted to fb13-sa.
+
+### Decided by the build agent, open to Charles's reversal
+- Placing starts disabled (`placing_enabled: false`) until an operator
+  resumes: the FB13 form of `auto_start = FALSE`.
+- Bucket roles are objectCreator and objectViewer rather than the objectAdmin
+  proposed at step 0, so the service account cannot delete or overwrite.
+- httpx 0.28.1 added as a test-only pin: FastAPI's test client needs it. Not
+  in the image.
+- One instance, minimum and maximum: one Betfair session from step 2, and an
+  order can never be built twice by two instances. Costs an always-on instance.
+
+### Recorded for Claude Strategy, not acted on
+- CHI-PRO-003 (24 August 2026) assigns the Live key to the stream and the
+  Delayed key to orders and account calls. Chimera_CBI_Corrections_For_CC.txt,
+  as summarised in the version 1 prompt, assigned them the other way round.
+  Charles ruled for CHI-PRO-003 on 2 November 2026. The Corrections document
+  is not in the Bible clone.
+- CHI-BRF-002 says a First Build builds no admin endpoint set. The version 1
+  prompt asks for the admin shell at step 1; it is built to CHI-POL-008.
+- CHI-BRF-002 says Python "3.13. NOT 3.14" and `python:3.12-slim` in the same
+  row; CHI-BRF-004 says `python:3.13-slim`. Charles ruled 3.12, the fleet
+  standard and what the CHI-BRF-004 amendment will say.
+- Cloudflare Access was not covering fb13.chimerasportstrading.com at 01:24 UTC
+  on 2 November 2026: a plain request answered 200 with no login redirect.
+- Betfair's note that a Live key with no wagering activity can be deactivated:
+  recorded in the README, nothing done.
+- Interim structures (CHI-POL-043): Secret Manager read directly behind
+  `get_credential` (CHI-POL-040 §6); `/admin/incidents` as a stub; the Access
+  token gate in the unit itself.
+
 ## [0.4.1] — 2026-11-02 — the version and the commit on the page
 
 ### Why

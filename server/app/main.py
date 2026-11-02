@@ -1,0 +1,389 @@
+"""FB13 trade slip API: the server behind the page's Place button.
+
+Version 1, step 1 (2 November 2026): the shell. Settings, the caps, the kill
+switch, the admin endpoint set of CHI-POL-008 (thirteen endpoints with the
+18 September 2026 amendment) and the five observability endpoints. No
+Betfair call is made in this version. Every endpoint but /health and /ready
+needs a Cloudflare Access token for an operator (app/access.py); the page
+reaches this service only through its own hostname (functions/api/[[path]].js).
+
+  GET  /health                  open: liveness
+  GET  /ready                   open: readiness (storage answers, settings loaded)
+  GET  /info                    static metadata: name, version, commit, pins, credential names
+  GET  /metrics                 Prometheus text
+  GET  /status                  one screen of plain text
+  GET  /admin/status            health, version, uptime, mode, placing, caps
+  GET  /admin/config            the stored settings in force
+  PUT  /admin/config            {"caps": {...}, "operators": [...], "reason": "..."}; mode is not settable here
+  GET  /admin/stats             counters
+  GET  /admin/activity          the last 100 events, newest first
+  GET  /admin/events            the same, live (server-sent events)
+  GET  /admin/incidents         [] (stub; CHI-POL-043 interim)
+  POST /admin/control/kill      stop all placing, paper and real, at once
+  POST /admin/control/resume    allow placing again
+
+Cancelling open orders is a separate, deliberate call and arrives in step 3.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import platform
+import time
+import uuid
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
+
+from app import logconfig
+from app.access import HEADER, AccessVerifier, Refused, operator_email
+from app.activity import Activity
+from app.credentials import credential_names, reads_so_far
+from app.metrics import Metrics
+from app.models import ConfigUpdate, ControlBody
+from app.settings import Settings, SettingsError
+from app.storage import Store, open_store
+from app.version import COMMIT, SERVICE_NAME, UNIT, VERSION, build_label
+
+logconfig.configure()
+log = logging.getLogger("fb13")
+
+PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT", "chiops")
+REGION = "europe-west2"
+EVENTS_MAX_S = 300.0  # one server-sent-events request lasts at most this; the page reconnects
+EVENTS_HEARTBEAT_S = 15.0
+INTERIM = [
+    "credentials: Secret Manager read directly by app/credentials.py (CHI-POL-040 §6)",
+    "incidents: GET /admin/incidents returns an empty list until the Incident FSU exists (CHI-POL-043)",
+    "sign-in: Cloudflare Access JWT verified here, operators listed in the stored settings",
+]
+
+
+@dataclass
+class Services:
+    store: Store
+    orders_store: Store
+    settings: Settings
+    activity: Activity
+    verifier: AccessVerifier
+    metrics: Metrics
+
+
+def build_services() -> Services:
+    store = open_store(os.environ.get("FB13_CONFIG_BUCKET", "").strip() or None)
+    orders_store = open_store(os.environ.get("FB13_ORDERS_BUCKET", "").strip() or None)
+    return Services(
+        store=store,
+        orders_store=orders_store,
+        settings=Settings(store),
+        activity=Activity(store),
+        verifier=AccessVerifier(os.environ.get("CF_ACCESS_TEAM_DOMAIN", ""), os.environ.get("CF_ACCESS_AUD", "")),
+        metrics=Metrics(),
+    )
+
+
+svc = build_services()
+
+
+def pinned_dependencies() -> dict[str, str]:
+    """The pins in requirements.txt, as shipped in the image (next to this package) or in the checkout."""
+    here = Path(__file__).resolve()
+    for candidate in (here.parents[1] / "requirements.txt",):
+        if candidate.is_file():
+            out: dict[str, str] = {}
+            for line in candidate.read_text("utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "==" in line:
+                    name, _, version = line.partition("==")
+                    out[name.strip()] = version.strip()
+            return out
+    return {}
+
+
+# ---- lifespan and middleware -------------------------------------------------
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    svc.activity.bind_loop(asyncio.get_running_loop())
+    await asyncio.to_thread(svc.settings.load)  # the stored values govern from the first request
+    loaded = await asyncio.to_thread(svc.activity.load_recent, 50)
+    await asyncio.to_thread(
+        svc.activity.record,
+        "instance_start",
+        None,
+        version=VERSION,
+        commit=COMMIT or None,
+        storage=svc.store.kind,
+        settings_from=svc.settings.source or "defaults (nothing stored yet)",
+        settings_error=svc.settings.error,
+        earlier_events_reloaded=loaded,
+    )
+    yield
+    await asyncio.to_thread(svc.activity.record, "instance_stop", None)
+
+
+app = FastAPI(title=f"{UNIT} trade slip API", version=VERSION, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+
+def trace_from(headers: Any) -> str:
+    cloud = headers.get("x-cloud-trace-context") or ""
+    if cloud:
+        return cloud.split("/", 1)[0][:64]
+    parent = headers.get("traceparent") or ""
+    parts = parent.split("-")
+    if len(parts) >= 3 and len(parts[1]) == 32:
+        return parts[1]
+    return uuid.uuid4().hex
+
+
+@app.middleware("http")
+async def observe(request: Request, call_next):
+    token = logconfig.trace_id_var.set(trace_from(request.headers))
+    started = time.monotonic()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        ms = (time.monotonic() - started) * 1000
+        path = request.url.path
+        route = path if path in KNOWN_PATHS else ("/admin/control/{action}" if path.startswith("/admin/control/") else "other")
+        svc.metrics.observe(request.method, route, status, ms)
+        if path not in ("/health", "/ready"):
+            log.info("%s %s %s", request.method, path, status, extra={"event": "request", "method": request.method, "path": path, "status": status, "ms": round(ms, 1)})
+        logconfig.trace_id_var.reset(token)
+
+
+# ---- the gate ----------------------------------------------------------------
+
+
+def require_operator(request: Request) -> str:
+    """The signed-in operator's email, or an HTTP refusal. Sync: FastAPI runs it in a worker thread."""
+    token = request.headers.get(HEADER)
+    try:
+        if not token:
+            raise Refused(401, "no Access token: this API answers only through the page")
+        claims = svc.verifier.verify(token)
+        return operator_email(claims, svc.settings.current()["operators"])
+    except Refused as exc:
+        svc.metrics.refused()
+        log.warning("refused %s %s: %s", request.method, request.url.path, exc.detail, extra={"event": "refused", "status": exc.status})
+        raise HTTPException(exc.status, exc.detail) from exc
+
+
+# ---- observability -----------------------------------------------------------
+
+
+@app.get("/health")
+def health() -> dict[str, Any]:
+    return {"ok": True, "service": SERVICE_NAME, "version": VERSION}
+
+
+@app.get("/ready")
+def ready() -> JSONResponse:
+    storage_error: str | None = None
+    try:
+        svc.store.reachable()
+    except Exception as exc:  # noqa: BLE001
+        storage_error = f"{type(exc).__name__}: {exc}"
+    s = svc.settings
+    is_ready = storage_error is None and s.loaded_at is not None and s.error is None
+    body = {
+        "ready": is_ready,
+        "storage": svc.store.kind,
+        "storage_error": storage_error,
+        "settings_loaded_at": s.loaded_at,
+        "settings_error": s.error,
+        "access_configured": svc.verifier.configured,
+    }
+    return JSONResponse(body, status_code=200 if is_ready else 503)
+
+
+@app.get("/info")
+def info(email: str = Depends(require_operator)) -> dict[str, Any]:
+    return {
+        "name": SERVICE_NAME,
+        "unit": UNIT,
+        "version": VERSION,
+        "commit": COMMIT or None,
+        "python": platform.python_version(),
+        "project": PROJECT,
+        "region": REGION,
+        "storage": {"config": svc.store.location, "orders": svc.orders_store.location, "kind": svc.store.kind},
+        "dependencies": pinned_dependencies(),
+        "credentials": {"names": credential_names(), "reads_this_process": reads_so_far()},
+        "access": {"configured": svc.verifier.configured, "issuer": svc.verifier.issuer or None, "certs": svc.verifier.certs_url or None},
+        "betfair": {"calls_made": 0, "note": "no Betfair call is made in this version (step 1)"},
+        "interim": INTERIM,
+    }
+
+
+@app.get("/metrics")
+def metrics(email: str = Depends(require_operator)) -> PlainTextResponse:
+    v = svc.settings.values
+    gauges = {
+        "fb13_placing_enabled": 1 if v["placing_enabled"] else 0,
+        "fb13_mode_real": 1 if v["mode"] == "real" else 0,
+        "fb13_real_allowed": 1 if svc.settings.real_allowed else 0,
+        "fb13_cap_per_order_gbp": v["caps"]["per_order_at_risk_gbp"],
+        "fb13_cap_per_day_gbp": v["caps"]["per_day_at_risk_gbp"],
+        "fb13_operators": len(v["operators"]),
+        "fb13_settings_versions": svc.settings.versions,
+        "fb13_activity_store_errors": svc.activity.store_errors,
+        "fb13_events_subscribers": svc.activity.subscribers,
+    }
+    text = svc.metrics.render(gauges, {"service": SERVICE_NAME, "version": VERSION})
+    return PlainTextResponse(text, media_type="text/plain; version=0.0.4; charset=utf-8")
+
+
+@app.get("/status")
+def status_text(email: str = Depends(require_operator)) -> PlainTextResponse:
+    s = svc.settings
+    v = s.values
+    totals = svc.metrics.totals()
+    lines = [
+        f"{UNIT} trade slip API, {build_label()}",
+        f"mode: {v['mode']}" + ("" if s.real_allowed else " (real refused: " + ("the stored settings say paper" if v["mode"] != "real" else "page access not yet confirmed by Charles") + ")"),
+        f"placing: {'enabled' if v['placing_enabled'] else 'DISABLED (kill switch on)'}",
+        f"caps: £{v['caps']['per_order_at_risk_gbp']:.2f} at risk an order, £{v['caps']['per_day_at_risk_gbp']:.2f} a mode a London day",
+        f"operators: {len(v['operators'])}" + ("" if v["operators"] else " (nobody can sign in)"),
+        f"sign-in: Cloudflare Access token, {'configured' if svc.verifier.configured else 'NOT configured: everything refused'}",
+        f"storage: {svc.store.location}, settings in force from {s.source or 'the defaults (nothing stored yet)'}",
+        f"settings: {s.versions} version(s) stored" + (f", error: {s.error}" if s.error else "") + (f", problems: {'; '.join(s.problems)}" if s.problems else ""),
+        f"activity: {svc.activity.recorded} event(s) this instance, {svc.activity.store_errors} not stored",
+        f"requests: {totals['requests']} answered, {totals['auth_refusals']} refused at the gate, {totals['server_errors']} server errors",
+        "betfair: no call made in this version (step 1)",
+        f"uptime: {totals['uptime_s']} s",
+    ]
+    return PlainTextResponse("\n".join(lines) + "\n")
+
+
+# ---- set 1: parameters (admin) -----------------------------------------------
+
+
+@app.get("/admin/status")
+def admin_status(email: str = Depends(require_operator)) -> dict[str, Any]:
+    s = svc.settings
+    v = s.values
+    return {
+        "ok": True,
+        "service": SERVICE_NAME,
+        "unit": UNIT,
+        "version": VERSION,
+        "commit": COMMIT or None,
+        "uptime_s": round(svc.metrics.uptime_s, 1),
+        "mode": v["mode"],
+        "real_allowed": s.real_allowed,
+        "page_access_confirmed": v["page_access_confirmed"],
+        "placing_enabled": v["placing_enabled"],
+        "caps": dict(v["caps"]),
+        "operators": len(v["operators"]),
+        "signed_in_as": email,
+        "access_configured": svc.verifier.configured,
+        "storage": svc.store.kind,
+        "settings_in_force_from": s.source,
+        "settings_error": s.error,
+        "settings_problems": list(s.problems),
+        "betfair": {"calls_made": 0, "note": "no Betfair call is made in this version (step 1)"},
+    }
+
+
+@app.get("/admin/config")
+def get_config(email: str = Depends(require_operator)) -> dict[str, Any]:
+    svc.settings.current()
+    return svc.settings.view()
+
+
+@app.put("/admin/config")
+def put_config(body: ConfigUpdate, email: str = Depends(require_operator)) -> dict[str, Any]:
+    changes = body.model_dump(exclude_none=True)
+    reason = changes.pop("reason", None)
+    try:
+        view = svc.settings.put(changes, by=email, reason=reason)
+    except SettingsError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 - the store refused: nothing changed
+        log.exception("settings not stored")
+        raise HTTPException(503, f"the settings could not be stored: {type(exc).__name__}") from exc
+    svc.activity.record("config_changed", email, changes=changes, reason=reason, version=view["in_force_from"])
+    return view
+
+
+@app.get("/admin/stats")
+def stats(email: str = Depends(require_operator)) -> dict[str, Any]:
+    v = svc.settings.values
+    return {
+        **svc.metrics.totals(),
+        "caps": dict(v["caps"]),
+        "at_risk_today_gbp": {"paper": 0.0, "real": 0.0},
+        "orders": {"recorded": 0, "note": "order records begin at step 3; nothing has been built or placed"},
+        "settings_versions": svc.settings.versions,
+        "activity": {"recorded_this_instance": svc.activity.recorded, "not_stored": svc.activity.store_errors, "subscribers": svc.activity.subscribers},
+        "credential_reads": reads_so_far(),
+    }
+
+
+@app.get("/admin/activity")
+def activity(email: str = Depends(require_operator)) -> list[dict[str, Any]]:
+    return svc.activity.recent(100)
+
+
+@app.get("/admin/events")
+async def events(email: str = Depends(require_operator)) -> StreamingResponse:
+    queue = svc.activity.subscribe()
+    loop = asyncio.get_running_loop()
+
+    async def stream():
+        try:
+            yield f": connected {SERVICE_NAME} {build_label()}\n\n"
+            deadline = loop.time() + EVENTS_MAX_S
+            while loop.time() < deadline:
+                try:
+                    ev = await asyncio.wait_for(queue.get(), timeout=EVENTS_HEARTBEAT_S)
+                except TimeoutError:
+                    yield ": heartbeat\n\n"
+                    continue
+                yield f"id: {ev['id']}\nevent: {ev['event']}\ndata: {json.dumps(ev, ensure_ascii=False)}\n\n"
+        finally:
+            svc.activity.unsubscribe(queue)
+
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/admin/incidents")
+def incidents(email: str = Depends(require_operator)) -> list[dict[str, Any]]:
+    # Stub by design: the surface exists, the content waits for the Incident FSU (CHI-POL-008
+    # amendment of 18 Sep 2026; CHI-POL-043). An empty list, never an error, never a 404.
+    return []
+
+
+@app.post("/admin/control/{action}")
+def control(action: str, body: ControlBody | None = None, email: str = Depends(require_operator)) -> dict[str, Any]:
+    reason = body.reason if body else None
+    if action not in ("kill", "resume"):
+        raise HTTPException(404, "actions of this unit: kill (stop all placing at once), resume")
+    try:
+        view = svc.settings.set_placing(action == "resume", by=email, reason=reason)
+    except Exception as exc:  # noqa: BLE001 - the store refused: the stored value, whatever it is, still governs
+        log.exception("%s not stored", action)
+        raise HTTPException(503, f"{action} could not be stored: {type(exc).__name__}") from exc
+    svc.activity.record(action, email, reason=reason, version=view["in_force_from"])
+    return {
+        "action": action,
+        "placing_enabled": view["values"]["placing_enabled"],
+        "in_force_from": view["in_force_from"],
+        "by": email,
+        "at": view["updated_at"],
+    }
+
+
+KNOWN_PATHS = frozenset(getattr(r, "path", "") for r in app.routes)

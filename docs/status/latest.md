@@ -1,28 +1,48 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 0. **Written:** 2026-11-02, by the build agent.
+**Unit:** FB13 Trade slip, version 1 (step 1 of 5). **Written:** 2026-11-02,
+about 02:00 UTC, by the build agent.
 
-**State:** steps 0 to 4 pushed to main on chimeracloud/fb13. The Pages build
-for 1f083f8 (B, 0.3.1) passed, Charles reports. Pushed on 2 November 2026:
-the status commit, the second and third real pastes as fixtures (0.3.2,
-0.3.3), step 4 export (0.4.0, 7642519), and 0.4.1, which puts the version and
-the short commit hash in the footer and on the first line of the diagnostics,
-so a paste always says which build read it. 86 tests in all, none run here:
-they run in the Pages build. Step 5, tests from the real fixtures, has been
-done alongside each step.
+**State:** version 1 step 1 is built and committed on `main` as 0.5.0, not
+pushed. The server shell exists in the repository: the stored settings (mode,
+caps, kill switch, operators), the thirteen admin and observability endpoints
+of CHI-POL-008 behind the Cloudflare Access token gate, the Pages Function
+that carries `/api/*` from the page's hostname to the server, and the Cloud
+Build pipeline that tests, builds and deploys it. It makes no Betfair call.
+The cloud resources Charles approved exist: `fb13-sa`, the buckets
+`chiops-fb13-config` and `chiops-fb13-orders`, the Artifact Registry
+repository `fb13`, create-and-read bindings on the buckets, and read access
+for `fb13-sa` on the five existing Betfair secrets. Nothing is deployed yet.
 
-**Decided by Charles, 2 November 2026:** a not placed entry carries no mode.
-Left as built.
+**Waiting for (from Charles), since 2 November 2026:**
+- The word to push 0.5.0.
+- The repository connected in Cloud Build, after which the build agent
+  creates the trigger `fb13-main` with `--build-config`.
+- The Cloudflare Access team domain and the application's audience tag, to go
+  into `cloudbuild.yaml`. Until then the server refuses everything but
+  `/health` and `/ready`.
+- The operators' email addresses, to seed the first settings version. Until
+  then nobody can sign in.
+- Whether `httpx` 0.28.1 may stay as a test-only pin (FastAPI's test client
+  needs it), and whether placing starting disabled is as he wants.
+- The Pages build results for 7642519 (0.4.0) and fe159bf (0.4.1), still
+  unreported.
 
-**Waiting for (from Charles):**
-- The Pages build results for 7642519 (0.4.0) and for 0.4.1.
-- Whether the footer and the diagnostics read as wanted once 0.4.1 is live.
-- Anything further for step 5, or the next unit of work.
+**Last did:** version 1 step 1, 0.5.0, committed 2026-11-02. Before it, the
+Step 0 message for version 1 (sent, answered the same day).
 
-**Last did:** 0.4.1, the version and the commit on the page, 2026-11-02.
+**Found and reported, not acted on:**
+- Cloudflare Access was not covering fb13.chimerasportstrading.com at 01:24
+  UTC on 2 November 2026: a plain request answered 200 with no login redirect.
+- CHI-PRO-003 and Chimera_CBI_Corrections_For_CC.txt assign the two Betfair
+  keys opposite ways; Charles ruled for CHI-PRO-003 (the Delayed key).
+  Betfair's documentation confirms a Delayed key places bets on the live
+  exchange.
+- CHI-BRF-002 says a First Build builds no admin endpoint set; the version 1
+  prompt asks for the shell, so it is built.
+- CHI-BRF-002 and CHI-BRF-004 disagree with each other and with Charles's
+  ruling on the Python version; 3.12 built, as ruled.
 
-**Found and reported, not acted on:** CHI-BRF-002 and CHI-BRF-004 disagree on
-the Node version (20 against 22). Building on 22 as approved; recorded in the
-CHANGELOG for Claude Strategy.
-
-**Declined:** nothing.
+**Declined:** nothing. Nothing ran on Charles's machine: the Python and
+JavaScript files were parsed for syntax only; the tests run in Cloud Build and
+in the Pages build.
