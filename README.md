@@ -33,7 +33,7 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
 | 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 94 tests (8 of them for the Pages Function), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
-| v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2. The trigger `fb13-main` could not yet be created: Cloud Build has no repository mapping for `chimeracloud/fb13` (see Cloud resources). The first deploy runs once the trigger exists and a push touches the server |
+| v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Not started. The first login waits for Charles's word |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
@@ -316,8 +316,8 @@ else in the project was changed.
 | Service account | `fb13-sa@chiops.iam.gserviceaccount.com` |
 | Buckets | `chiops-fb13-config`, `chiops-fb13-orders` (europe-west2) |
 | Artifact Registry | `europe-west2-docker.pkg.dev/chiops/fb13`, image `fb13-trade-slip-api` |
-| Cloud Run service | `fb13-trade-slip-api`, europe-west2 (created by the first build) |
-| Cloud Build trigger | `fb13-main`: `chimeracloud/fb13`, `^main$`, `cloudbuild.yaml`, filtered to `server/**` and `cloudbuild.yaml`, on the default compute service account like the other `-main` triggers. **Not yet created.** On 2 November 2026 `gcloud builds triggers create github` answered `FAILED_PRECONDITION: Repository mapping does not exist`, and no mapping for `chimeracloud/fb13`, first or second generation, was found in `chiops` in any region. It is created with `--build-config` as soon as the repository is connected |
+| Cloud Run service | `fb13-trade-slip-api`, europe-west2, created by the first build on 2 November 2026 (build 19b2dac4, revision `fb13-trade-slip-api-00001-zv6`, image `:627ec3b`). Reached by the page through `https://fb13-trade-slip-api-991649774709.europe-west2.run.app` |
+| Cloud Build trigger | `fb13-main`, **region europe-west2**: `chimeracloud/fb13`, `^main$`, `cloudbuild.yaml`, filtered to `server/**` and `cloudbuild.yaml`, on the default compute service account like the other `-main` triggers. Created with `--build-config` on 2 November 2026 (id `2e7dd541-4aff-413a-b175-4e1ea52ea1be`). The region matters: Charles connected the repository to the first-generation GitHub App installation that lives in europe-west2 (the Cloud Build audit log, 01:20:00 UTC that day), so a first attempt in region global failed with "Repository mapping does not exist". The other `-main` triggers are global; this one builds in London |
 
 ## Where it runs
 
@@ -354,10 +354,14 @@ to set today. Pages picks the `functions/` directory up on its own.
 **The server.** Cloud Run, `fb13-trade-slip-api`, `europe-west2` (London:
 Betfair blocks South African addresses), project `chiops`, service account
 `fb13-sa`. Deployed by Cloud Build from `cloudbuild.yaml` on every push to
-`main` that touches `server/**` or that file (trigger `fb13-main`). The tests
-run first, in the cloud, on Python 3.12; the image is built only when they
-pass; the deploy carries every flag the service must have, so the live service
-always matches the file. At most one instance, so an order can never be built
+`main` that touches `server/**` or that file (trigger `fb13-main`, region
+europe-west2, where the repository is connected). The tests run first, in the
+cloud, on Python 3.12; the image is built only when they pass; the deploy
+carries every flag the service must have, so the live service always matches
+the file. Read back after the first deploy on 2 November 2026: every flag as
+the file, plus two platform defaults the file does not set, startup CPU boost
+on the revision and a service-level maximum of 100 instances, which the
+revision's maximum of 1 governs. Recorded, not changed. At most one instance, so an order can never be built
 twice by two instances; minimum zero until step 2, when the question of one
 standing Betfair session is revisited (Charles, 2 November 2026). Its invoker
 IAM check is off: the Access token, verified on every
@@ -423,10 +427,16 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   the chimera-cape team's login, where at 01:24 UTC the same request had been
   answered 200 with no redirect. The stored `page_access_confirmed` stays
   false until Charles writes it true; real mode needs it.
-- **The Access values are set but not yet deployed.** Until the first build
-  runs there is no server at all. Once deployed, a wrong value would show as
-  401 on every call through the page, and `/ready` reports whether sign-in is
-  configured.
+- **The Access values are deployed** and `/ready` reports sign-in configured.
+  A wrong value would show as 401 on every call through the page; not yet
+  exercised through the page by an operator.
+- **The pages.dev addresses are not behind Access.** `fb13-d7g.pages.dev` and
+  the per-deployment addresses served the page to a plain request from Cape
+  Town at 02:48 UTC on 2 November 2026. The API refuses there too (401, no
+  token) and the page holds no data for a stranger, since browser storage is
+  per origin; but Access covers the custom hostname only. Charles decides
+  whether to add `fb13-d7g.pages.dev` and `*.fb13-d7g.pages.dev` to the
+  Access application.
 - **The operator list holds two addresses**, from the first settings version
   written by hand at Charles's word on 2 November 2026. Others are added by a
   new version, never by editing.

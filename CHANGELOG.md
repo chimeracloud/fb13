@@ -2,6 +2,55 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.5.3] — 2026-11-02 — the trigger, the first deploy, and a correction
+
+### Correction
+- 0.5.1's README and CHANGELOG said no repository mapping for
+  `chimeracloud/fb13` existed in `chiops` in any region. Wrong. The Cloud
+  Build audit log shows Charles connected the repository at 01:20:00 UTC on
+  2 November to the first-generation GitHub App installation in region
+  europe-west2 (installation 117056298, repositories fsu1e and fb13). The
+  build agent's create at 02:04 UTC ran in region global, where that
+  installation has no mapping, and failed. The build agent had no read path
+  for first-generation mappings and said more than it knew.
+
+### Done in the cloud, 2 November 2026
+- Trigger `fb13-main` created in region europe-west2 with
+  `--build-config=cloudbuild.yaml`, branch `^main$`, filtered to `server/**`
+  and `cloudbuild.yaml`, on the default compute service account. Id
+  `2e7dd541-4aff-413a-b175-4e1ea52ea1be`.
+- Run once by hand on main at Charles's word: build 19b2dac4 at 627ec3b,
+  70 seconds, all four steps SUCCESS. Python 3.12.16; "47 passed". Image
+  `europe-west2-docker.pkg.dev/chiops/fb13/fb13-trade-slip-api:627ec3b`.
+  Cloud Run service `fb13-trade-slip-api`, revision
+  `fb13-trade-slip-api-00001-zv6`, ready.
+- Read back against `cloudbuild.yaml`: service account, image, the six
+  environment variables, cpu 1, memory 512Mi, concurrency 20, timeout 600,
+  port 8080, maximum 1 instance, minimum 0, ingress all, invoker IAM check
+  off with no IAM binding on the service, labels app=fb13 and unit=fb13: all
+  as the file. Two things on the service the file does not set, both platform
+  defaults: startup CPU boost on the revision, and a service-level maximum of
+  100 instances, which the revision's maximum of 1 governs. Recorded, not
+  changed.
+- `GET /health`: `{"ok":true,"service":"fb13-trade-slip-api","version":"0.5.2"}`.
+  `GET /ready`: ready true, storage gcs, settings loaded at 02:23:33 UTC with
+  no error, access configured true. `GET /admin/status` without a token: 401
+  "no Access token". No Betfair login. Placing not enabled.
+- The Pages build for bb4e8cc passed (Charles's screenshot). The Pages
+  Function answers 401 without a token on every address.
+
+### Recorded for Charles, not acted on
+- The pages.dev addresses serve the page without Access; the API refuses there
+  too and the page holds no data for a stranger. README, Known risks.
+- FastAPI 0.150.0's test client warns that `httpx` with `starlette.testclient`
+  is deprecated in favour of `httpx2`. The tests pass. A later pin change,
+  with Charles.
+
+### Changed
+- README: the trigger row corrected and completed; the service row; the
+  platform defaults; the pages.dev risk; the Access values deployed.
+- `package.json` to 0.5.3. The page is unchanged.
+
 ## [0.5.2] — 2026-11-02 — the Access values
 
 ### Changed
