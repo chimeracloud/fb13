@@ -1,6 +1,6 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 10:13 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 10:17 UTC, by the
 build agent, from the clock.
 
 **State:** the page at fb13.chimerasportstrading.com is still 0.6.4: the Pages
@@ -14,9 +14,9 @@ this fix, 0.7.3. The server's pytest suite on 3dd34e6 failed 3 of 96 in the
 same kind of build (2a7447ab): one real bug (a Betfair session error was
 never recognised, because the scrubber redacted the error code before the
 check) and two tests that still asserted step 2's wording or one refusal
-where the builder names two. Fixed in 0.7.3, which waits for its own
-tests-only run. The page suite on the tip passed (26ad6ee9: 10 files, 116
-tests). The live server is 0.6.4 (revision 00004-9vw), logged in since
+where the builder names two. Fixed in 0.7.3 (288b9b6), and green in its own
+tests-only runs: the server suite 96 passed on Python 3.12.16 (f4eef1e9), the
+page suite 116 passed on node v22.23.4 (fbd88e0a). The live server is 0.6.4 (revision 00004-9vw), logged in since
 06:41 UTC, mode paper, placing disabled, untouched. No order of any kind has
 been sent.
 
@@ -25,8 +25,9 @@ been sent.
   ec4c6d2:refs/heads/main`), after the 112 are reported; then the Pages check
   and the live bundle at 0.6.7.
 - Then he pastes the 08:00 slip into the current instance and presses Resolve.
-- Later, his word to push the server commits, once the server suite is green
-  in a tests-only build. That deploy replaces the instance and drops the
+- Later, his word to push the server commits (9014251, 0c693e1, bece150,
+  3dd34e6, 288b9b6 and this status commit), both suites green in the cloud on
+  288b9b6. That deploy replaces the instance and drops the
   Betfair session; he logs in again.
 - After the deploy: Charles writes the settings version for real mode himself
   (the exact object and command are in the report of 2 November), then the £2
@@ -35,7 +36,8 @@ been sent.
   Mark.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** ran the tests in one-off tests-only Cloud Builds (a `git archive`
+**Last did:** confirmed 0.7.3 green in the cloud (above). Before that: ran the
+tests in one-off tests-only Cloud Builds (a `git archive`
 of the exact commit, an inline config with one step, no trigger, no deploy, no
 new resource: the staging bucket `chiops_cloudbuild` already existed), read the
 logs after each finished, and fixed the three server failures as 0.7.3:
