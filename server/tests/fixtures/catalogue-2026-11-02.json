@@ -1,0 +1,2241 @@
+{
+ "_fixture": "The real listMarketCatalogue record of 2 November 2026, read back from gs://chiops-fb13-orders/betfair/2026-11-02/1793601735917-9e83e993.json. Nothing in it was edited but the operator's address.",
+ "at": "2026-11-02T06:42:15.917Z",
+ "by": "operator",
+ "http": [
+  {
+   "at": "2026-11-02T06:42:15.851Z",
+   "error": null,
+   "method": "POST",
+   "ms": 64.0,
+   "status": 200,
+   "url": "https://api.betfair.com/exchange/betting/json-rpc/v1"
+  }
+ ],
+ "key": "delayed",
+ "ms": 66.5,
+ "operation": "listMarketCatalogue",
+ "request": {
+  "filter": {
+   "eventTypeIds": [
+    "7"
+   ],
+   "marketCountries": [
+    "GB",
+    "IE"
+   ],
+   "marketStartTime": {
+    "from": "2026-11-02T00:00:00Z",
+    "to": "2026-11-03T00:00:00Z"
+   },
+   "marketTypeCodes": [
+    "WIN"
+   ]
+  },
+  "marketProjection": [
+   "EVENT",
+   "MARKET_START_TIME",
+   "RUNNER_DESCRIPTION"
+  ],
+  "maxResults": 200,
+  "operation": "listMarketCatalogue",
+  "sort": "FIRST_TO_START"
+ },
+ "response": {
+  "count": 30,
+  "markets": [
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841544",
+    "marketName": "3m2f Nov Hcap Chs",
+    "marketStartTime": "2026-11-02T13:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Hard Stare",
+      "selectionId": 81578849,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tom Taggle",
+      "selectionId": 67336975,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Could Be You",
+      "selectionId": 92514105,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lancier Des Obeaux",
+      "selectionId": 92713168,
+      "sortPriority": 4
+     }
+    ],
+    "totalMatched": 2338.36
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841503",
+    "marketName": "3m Hcap Chs",
+    "marketStartTime": "2026-11-02T13:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Law Of Supply",
+      "selectionId": 54534897,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Just In A Bit",
+      "selectionId": 63937593,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Moonlightinthepark",
+      "selectionId": 91700290,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Glengolly",
+      "selectionId": 53227972,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Billy Boi Blue",
+      "selectionId": 44284125,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Twist Of Fatecatch",
+      "selectionId": 77225003,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Four Decades",
+      "selectionId": 88525844,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Harrys Hope",
+      "selectionId": 62597325,
+      "sortPriority": 8
+     }
+    ],
+    "totalMatched": 1721.1
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841548",
+    "marketName": "2m5f Mdn Hrd",
+    "marketStartTime": "2026-11-02T13:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Baillys Comet",
+      "selectionId": 91405514,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Le Cold Grey",
+      "selectionId": 90579877,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Bold Step",
+      "selectionId": 93543128,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Silverhill Freya",
+      "selectionId": 104515625,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chase The Status",
+      "selectionId": 102607819,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Vicomte Le Brave",
+      "selectionId": 103748615,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Merci Vieil Ami",
+      "selectionId": 100834106,
+      "sortPriority": 7
+     }
+    ],
+    "totalMatched": 3081.32
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841509",
+    "marketName": "2m Nov Hcap Chs",
+    "marketStartTime": "2026-11-02T13:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Joyau Allen",
+      "selectionId": 53866133,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kalkaroo",
+      "selectionId": 59895728,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Synchronist",
+      "selectionId": 77944176,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kupka Vallis",
+      "selectionId": 79427758,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Walk The Plank",
+      "selectionId": 11946658,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ballyearl",
+      "selectionId": 39036395,
+      "sortPriority": 6
+     }
+    ],
+    "totalMatched": 2767.48
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841555",
+    "marketName": "2m4f Nov Hcap Chs",
+    "marketStartTime": "2026-11-02T14:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Hiero Sport",
+      "selectionId": 54092045,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Diamond Days",
+      "selectionId": 6237223,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Walk In The West",
+      "selectionId": 77352454,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kapability",
+      "selectionId": 75497745,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lunar Ocean",
+      "selectionId": 53727845,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Georges Street",
+      "selectionId": 5335914,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Onewayortother",
+      "selectionId": 43066087,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Known Warrior",
+      "selectionId": 81236761,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kill The Groove",
+      "selectionId": 79863222,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lord Maher",
+      "selectionId": 70257985,
+      "sortPriority": 10
+     }
+    ],
+    "totalMatched": 1351.24
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841516",
+    "marketName": "2m NHF",
+    "marketStartTime": "2026-11-02T14:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Chinese Whispers",
+      "selectionId": 95975972,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Backwaters",
+      "selectionId": 104515614,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Somniare",
+      "selectionId": 104515616,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Music Maker",
+      "selectionId": 11309835,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Magellan Dirlande",
+      "selectionId": 104515613,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chiquita Milano",
+      "selectionId": 98322012,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "West Of The River",
+      "selectionId": 104515612,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lord Forlife",
+      "selectionId": 98427914,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Join The Kew",
+      "selectionId": 104515611,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Percy J",
+      "selectionId": 104515618,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chasing Dawn",
+      "selectionId": 104515610,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lady Northumbria",
+      "selectionId": 104515617,
+      "sortPriority": 12
+     }
+    ],
+    "totalMatched": 1363.46
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841568",
+    "marketName": "2m5f Hcap Hrd",
+    "marketStartTime": "2026-11-02T14:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Kocktail Bleu",
+      "selectionId": 78729008,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Let Him B",
+      "selectionId": 67371677,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Maldini Milano",
+      "selectionId": 76502598,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Nardaran",
+      "selectionId": 70080304,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Stream Of Stars",
+      "selectionId": 18241613,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Walk On High",
+      "selectionId": 41554393,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Range",
+      "selectionId": 49903476,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Goodwin",
+      "selectionId": 26085350,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Sixty Plus",
+      "selectionId": 66049877,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Bandjo",
+      "selectionId": 83998879,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ike Sport",
+      "selectionId": 42591790,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Scorsese",
+      "selectionId": 35136338,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tonaghneave Well",
+      "selectionId": 69005773,
+      "sortPriority": 13
+     }
+    ],
+    "totalMatched": 2835.78
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841531",
+    "marketName": "2m Mdn Hrd",
+    "marketStartTime": "2026-11-02T14:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Rices Pool",
+      "selectionId": 38970,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Midnight Jukebox",
+      "selectionId": 94457607,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Jetzet",
+      "selectionId": 96192031,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "The Noble Butler",
+      "selectionId": 95550791,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Westbrooke Boy",
+      "selectionId": 91496926,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ocean View",
+      "selectionId": 10738234,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ruling Planet",
+      "selectionId": 104515606,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Renes Ocean",
+      "selectionId": 104515608,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ricky Roma",
+      "selectionId": 104515609,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Imperial Sea",
+      "selectionId": 20266816,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Land Of Dreams",
+      "selectionId": 86321402,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Moorhead",
+      "selectionId": 97329247,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Treshnish Point",
+      "selectionId": 101929793,
+      "sortPriority": 13
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Short Sell",
+      "selectionId": 98427916,
+      "sortPriority": 14
+     }
+    ],
+    "totalMatched": 1697.88
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841561",
+    "marketName": "3m2f Hcap Chs",
+    "marketStartTime": "2026-11-02T15:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Jubilant",
+      "selectionId": 12284400,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Rickety Bridge",
+      "selectionId": 2194997,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tommie Beau",
+      "selectionId": 27477623,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Alien Storm",
+      "selectionId": 42717115,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ile De Jersey",
+      "selectionId": 42680675,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lord Accord",
+      "selectionId": 3830909,
+      "sortPriority": 6
+     }
+    ],
+    "totalMatched": 1381.36
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841524",
+    "marketName": "3m Hcap Hrd",
+    "marketStartTime": "2026-11-02T15:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Our Girl Sal",
+      "selectionId": 47059602,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Blue Marvel",
+      "selectionId": 85601771,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Dartmouth Rose",
+      "selectionId": 69296706,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shorten Sassy",
+      "selectionId": 77944179,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Davita Blaze",
+      "selectionId": 95312566,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Moveonbuy",
+      "selectionId": 63648577,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Pepite De Saphir",
+      "selectionId": 64069056,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Annie Nail",
+      "selectionId": 41645749,
+      "sortPriority": 8
+     }
+    ],
+    "totalMatched": 776.66
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841574",
+    "marketName": "2m Hcap Hrd",
+    "marketStartTime": "2026-11-02T15:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Goodwin Face",
+      "selectionId": 63225751,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Uncle Remus",
+      "selectionId": 85195595,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Birthday Angel",
+      "selectionId": 63805237,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Soul Limbo",
+      "selectionId": 69077164,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Thankyouandplease",
+      "selectionId": 80913585,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "One Island",
+      "selectionId": 83192555,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Cayman Dancer",
+      "selectionId": 82799545,
+      "sortPriority": 7
+     }
+    ],
+    "totalMatched": 1189.86
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262472",
+     "name": "Southwell 2nd Nov",
+     "openDate": "2026-11-02T13:15:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Southwell"
+    },
+    "marketId": "1.264841538",
+    "marketName": "2m4f Nov Hcap Hrd",
+    "marketStartTime": "2026-11-02T15:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Inca",
+      "selectionId": 22186324,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Anxious Moments",
+      "selectionId": 55757,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Uptons Mighty Oak",
+      "selectionId": 92793820,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Woodview Lad",
+      "selectionId": 82651840,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Dantes Inferno",
+      "selectionId": 61528815,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Pottersmattyeeehaa",
+      "selectionId": 72617890,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Different Drum",
+      "selectionId": 39540622,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Drumlee Orders",
+      "selectionId": 93798746,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Zaras Universe",
+      "selectionId": 27156457,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Scoro",
+      "selectionId": 99505027,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Granny B",
+      "selectionId": 45582073,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Footage Detectives",
+      "selectionId": 89895382,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "My Boy Beasty",
+      "selectionId": 88525849,
+      "sortPriority": 13
+     }
+    ],
+    "totalMatched": 1407.46
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262473",
+     "name": "Plumpton 2nd Nov",
+     "openDate": "2026-11-02T13:00:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Plumpton"
+    },
+    "marketId": "1.264841580",
+    "marketName": "2m5f Hcap Hrd",
+    "marketStartTime": "2026-11-02T16:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "The Boss Bear",
+      "selectionId": 82354573,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Keno Black",
+      "selectionId": 90224706,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Coastal Command",
+      "selectionId": 2229581,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Calme Olympien",
+      "selectionId": 71475021,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Low Expectations",
+      "selectionId": 1365144,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Everyonesgame",
+      "selectionId": 42319275,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kandor",
+      "selectionId": 54482512,
+      "sortPriority": 7
+     }
+    ],
+    "totalMatched": 1229.3
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841643",
+    "marketName": "1m1f Hcap",
+    "marketStartTime": "2026-11-02T16:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "The Anthony Gover",
+      "selectionId": 96390626,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Under The Sun",
+      "selectionId": 6237219,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Caledonian",
+      "selectionId": 598780,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Crimson Road",
+      "selectionId": 57569276,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ibn Altheeb",
+      "selectionId": 84879188,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lunella",
+      "selectionId": 100028168,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Serious Look",
+      "selectionId": 46869781,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Show Biz Kid",
+      "selectionId": 1141398,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Study Up",
+      "selectionId": 68982419,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tortured Soul",
+      "selectionId": 59391301,
+      "sortPriority": 10
+     }
+    ],
+    "totalMatched": 938.0
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841586",
+    "marketName": "5f Hcap",
+    "marketStartTime": "2026-11-02T16:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Startling",
+      "selectionId": 533788,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Rebel Path",
+      "selectionId": 40448722,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ancient Times",
+      "selectionId": 4489456,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Elvetham",
+      "selectionId": 72999468,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shalaa Asker",
+      "selectionId": 35536849,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "London Is Blue",
+      "selectionId": 84080026,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "The Fixer",
+      "selectionId": 5707866,
+      "sortPriority": 7
+     }
+    ],
+    "totalMatched": 794.88
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841650",
+    "marketName": "7f Hcap",
+    "marketStartTime": "2026-11-02T17:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Two Commanders",
+      "selectionId": 99006376,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chantelle",
+      "selectionId": 371218,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Montezin",
+      "selectionId": 89507336,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Reciprocated",
+      "selectionId": 84382002,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Distillation",
+      "selectionId": 8966910,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Enricher",
+      "selectionId": 84708113,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "The Dragon King",
+      "selectionId": 67452410,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Commander Of Life",
+      "selectionId": 56496594,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Warm Spell",
+      "selectionId": 56810964,
+      "sortPriority": 9
+     }
+    ],
+    "totalMatched": 654.32
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841592",
+    "marketName": "1m5f Hcap",
+    "marketStartTime": "2026-11-02T17:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Gemmari",
+      "selectionId": 76268925,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Charging Thunder",
+      "selectionId": 39422450,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Mother Dear",
+      "selectionId": 97460077,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Lady Ridgewood",
+      "selectionId": 74674695,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Brosna Town",
+      "selectionId": 61300887,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Big Bear Hug",
+      "selectionId": 39835428,
+      "sortPriority": 6
+     }
+    ],
+    "totalMatched": 788.92
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841657",
+    "marketName": "7f Hcap",
+    "marketStartTime": "2026-11-02T17:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Sergeant Pep",
+      "selectionId": 44979300,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chalk Mountain",
+      "selectionId": 47648763,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Alaminos",
+      "selectionId": 2831875,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Peter The Wolf",
+      "selectionId": 72592645,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Hes A Gentleman",
+      "selectionId": 8145922,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "King Of Chaos",
+      "selectionId": 9388424,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tonal",
+      "selectionId": 53349870,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Trust Amy",
+      "selectionId": 85871554,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Follow Your Heart",
+      "selectionId": 1058698,
+      "sortPriority": 9
+     }
+    ],
+    "totalMatched": 631.2
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841599",
+    "marketName": "6f Mdn Stks",
+    "marketStartTime": "2026-11-02T17:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Quai Louis",
+      "selectionId": 102530732,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Rocsane",
+      "selectionId": 98399492,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Reichenbach Falls",
+      "selectionId": 101498419,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Terry O",
+      "selectionId": 98072052,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Reeces Call",
+      "selectionId": 101860667,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Anna Belardo",
+      "selectionId": 97372242,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Cosmocrat",
+      "selectionId": 9199,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Terroir",
+      "selectionId": 24324913,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Denver Sluice",
+      "selectionId": 102993375,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Hell Of An Angel",
+      "selectionId": 104515702,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Sassaturra",
+      "selectionId": 104515703,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Hosta",
+      "selectionId": 103580935,
+      "sortPriority": 12
+     }
+    ],
+    "totalMatched": 399.88
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841664",
+    "marketName": "5f Nursery",
+    "marketStartTime": "2026-11-02T18:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Cavan Lady",
+      "selectionId": 99287503,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Calef",
+      "selectionId": 98568693,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Past Passion",
+      "selectionId": 97460218,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Fancied Angel",
+      "selectionId": 101822896,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Havana Grey Star",
+      "selectionId": 98252356,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Penny Capri",
+      "selectionId": 98033908,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Mollisha",
+      "selectionId": 100793037,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Carrow Road",
+      "selectionId": 98890749,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Rickys Rocket",
+      "selectionId": 97460089,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Agent Rose",
+      "selectionId": 99407212,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Dadawada",
+      "selectionId": 100142350,
+      "sortPriority": 11
+     }
+    ],
+    "totalMatched": 908.18
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841615",
+    "marketName": "6f Nursery",
+    "marketStartTime": "2026-11-02T18:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Blue Pete",
+      "selectionId": 98899577,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Californian Angel",
+      "selectionId": 99152360,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Beechwood Glory",
+      "selectionId": 99963007,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Last Dandelion",
+      "selectionId": 97930757,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Desert Legend",
+      "selectionId": 71837148,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Invincible Isaac",
+      "selectionId": 96783054,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Bearly Blue",
+      "selectionId": 98652297,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Knock Three Times",
+      "selectionId": 3444094,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Enamored",
+      "selectionId": 20909169,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Frumoasa",
+      "selectionId": 97897703,
+      "sortPriority": 10
+     }
+    ],
+    "totalMatched": 633.5
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841670",
+    "marketName": "1m1f Nov Stks",
+    "marketStartTime": "2026-11-02T18:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Wosta",
+      "selectionId": 98117730,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Steamroller",
+      "selectionId": 12031765,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Medaali",
+      "selectionId": 103828737,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Raider",
+      "selectionId": 610291,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Journalism",
+      "selectionId": 37430448,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Watch The King",
+      "selectionId": 96358957,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ruthless Ambition",
+      "selectionId": 88794707,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Abbey Bartlet",
+      "selectionId": 104515629,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Opal Rose",
+      "selectionId": 68392045,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Katana",
+      "selectionId": 574079,
+      "sortPriority": 10
+     }
+    ],
+    "totalMatched": 1261.36
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841607",
+    "marketName": "7f Nov Stks",
+    "marketStartTime": "2026-11-02T18:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Wedyan",
+      "selectionId": 103102781,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ladys Grace",
+      "selectionId": 103547563,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Young Clarissa",
+      "selectionId": 104515723,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Honeymoon Bear",
+      "selectionId": 99991173,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Mo Rocko",
+      "selectionId": 104093154,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Alpha Bella",
+      "selectionId": 47940407,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Bold Betty",
+      "selectionId": 103501721,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Literary",
+      "selectionId": 48860341,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Alidoolally",
+      "selectionId": 101498425,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Scarletts Spell",
+      "selectionId": 104093131,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Stansfield Dream",
+      "selectionId": 103863570,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Light Of Aurora",
+      "selectionId": 103547564,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Cranberry Breeze",
+      "selectionId": 102489504,
+      "sortPriority": 13
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Sacred Rhythm",
+      "selectionId": 15921305,
+      "sortPriority": 14
+     }
+    ],
+    "totalMatched": 1659.14
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841677",
+    "marketName": "1m6f Hcap",
+    "marketStartTime": "2026-11-02T19:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "That Darn Cantor",
+      "selectionId": 90190188,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Percy Jones",
+      "selectionId": 41176349,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Captain Cairney",
+      "selectionId": 87607157,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ottoman",
+      "selectionId": 153376,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Fiefdom",
+      "selectionId": 786713,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Sea Of Charm",
+      "selectionId": 35676409,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Dijon Gone",
+      "selectionId": 90101751,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Choir Boy",
+      "selectionId": 39218923,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Angel Breeze",
+      "selectionId": 80720692,
+      "sortPriority": 9
+     }
+    ],
+    "totalMatched": 164.74
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841622",
+    "marketName": "7f Hcap",
+    "marketStartTime": "2026-11-02T19:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Archers Grace",
+      "selectionId": 90467649,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Inside Story",
+      "selectionId": 1047648,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Ice Sovereigns",
+      "selectionId": 85828173,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Handle With Care",
+      "selectionId": 19270983,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Queen Tamara",
+      "selectionId": 5598138,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Society Kiss",
+      "selectionId": 83392062,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Moostar",
+      "selectionId": 69437318,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Bella Bisbee",
+      "selectionId": 62143572,
+      "sortPriority": 8
+     }
+    ],
+    "totalMatched": 730.84
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841684",
+    "marketName": "1m1f Hcap",
+    "marketStartTime": "2026-11-02T19:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Sovereign Bay",
+      "selectionId": 92417753,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shes Got The Blues",
+      "selectionId": 85518665,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Rajendra",
+      "selectionId": 88525499,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Eduardo Calderon",
+      "selectionId": 84198084,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Labiche",
+      "selectionId": 85195489,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Jamie Sommers",
+      "selectionId": 28220701,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Moonlight Melody",
+      "selectionId": 36716086,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Carwyn",
+      "selectionId": 85518956,
+      "sortPriority": 8
+     }
+    ],
+    "totalMatched": 786.44
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841629",
+    "marketName": "7f Hcap",
+    "marketStartTime": "2026-11-02T19:45:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Intervention",
+      "selectionId": 27072331,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Yachtsman",
+      "selectionId": 84671251,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Orange Emperor",
+      "selectionId": 83917124,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Dark Mandate",
+      "selectionId": 315212,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shaw Park",
+      "selectionId": 51819019,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shades Of May",
+      "selectionId": 75323219,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Fresh Fade",
+      "selectionId": 83722149,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Enpassant",
+      "selectionId": 57086930,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Chloes Courage",
+      "selectionId": 72923514,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Candy Warhol",
+      "selectionId": 43869152,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Hever Beauty",
+      "selectionId": 96728844,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Shush A Minute",
+      "selectionId": 86490806,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Obsidian Dream",
+      "selectionId": 72520000,
+      "sortPriority": 13
+     }
+    ],
+    "totalMatched": 730.38
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841691",
+    "marketName": "1m1f Hcap",
+    "marketStartTime": "2026-11-02T20:00:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Stipulation",
+      "selectionId": 74399372,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "New Objective",
+      "selectionId": 88748494,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Deep Sleep",
+      "selectionId": 1260191,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Snaafy",
+      "selectionId": 2033092,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Tiger Beetle",
+      "selectionId": 36836874,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Token Love",
+      "selectionId": 85518844,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Mohaab",
+      "selectionId": 85029750,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Imola",
+      "selectionId": 46549877,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Its Life",
+      "selectionId": 45700636,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Clarissa Eclipse",
+      "selectionId": 96623256,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Amazing Anita",
+      "selectionId": 86905819,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kindly Queen",
+      "selectionId": 92688782,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Merapi",
+      "selectionId": 7270213,
+      "sortPriority": 13
+     }
+    ],
+    "totalMatched": 1020.66
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262479",
+     "name": "Chelmsford City 2nd Nov",
+     "openDate": "2026-11-02T16:45:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Chelmsford City"
+    },
+    "marketId": "1.264841636",
+    "marketName": "1m2f Hcap",
+    "marketStartTime": "2026-11-02T20:15:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "Metallo",
+      "selectionId": 34573474,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Magician Of Riga",
+      "selectionId": 85518737,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Maestro Del Mar",
+      "selectionId": 78277754,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Kokoluna",
+      "selectionId": 90501140,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Hamdania",
+      "selectionId": 92216130,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Renesmee",
+      "selectionId": 4704711,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Mr Nugget",
+      "selectionId": 70465716,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Liberate",
+      "selectionId": 1289017,
+      "sortPriority": 8
+     }
+    ],
+    "totalMatched": 826.92
+   },
+   {
+    "event": {
+     "countryCode": "GB",
+     "id": "36262480",
+     "name": "Wolverhampton 2nd Nov",
+     "openDate": "2026-11-02T16:30:00.000Z",
+     "timezone": "Europe/London",
+     "venue": "Wolverhampton"
+    },
+    "marketId": "1.264841699",
+    "marketName": "6f Hcap",
+    "marketStartTime": "2026-11-02T20:30:00.000Z",
+    "runners": [
+     {
+      "handicap": 0.0,
+      "runnerName": "A Lott Of Kane",
+      "selectionId": 87999515,
+      "sortPriority": 1
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Macarone",
+      "selectionId": 56737910,
+      "sortPriority": 2
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "My Mate Kev",
+      "selectionId": 74990345,
+      "sortPriority": 3
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Daytona Lady",
+      "selectionId": 44544270,
+      "sortPriority": 4
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "March Of Time",
+      "selectionId": 54646090,
+      "sortPriority": 5
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Forever Glamorous",
+      "selectionId": 85994533,
+      "sortPriority": 6
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Megaphone",
+      "selectionId": 38628397,
+      "sortPriority": 7
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Cool Doc Boy",
+      "selectionId": 91361384,
+      "sortPriority": 8
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "The Feminine Urge",
+      "selectionId": 71525763,
+      "sortPriority": 9
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Geemann",
+      "selectionId": 86490770,
+      "sortPriority": 10
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Yaahobby",
+      "selectionId": 39439834,
+      "sortPriority": 11
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "My Boy Jack",
+      "selectionId": 3324325,
+      "sortPriority": 12
+     },
+     {
+      "handicap": 0.0,
+      "runnerName": "Sarafina Mshairi",
+      "selectionId": 75769231,
+      "sortPriority": 13
+     }
+    ],
+    "totalMatched": 698.5
+   }
+  ],
+  "status": "SUCCESS"
+ },
+ "session_state": "logged_in"
+}

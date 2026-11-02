@@ -160,18 +160,39 @@ def test_activity_shows_the_instance_start(client, operator):
 # ---- step 2: the Betfair session and the resolver, through the API ----------------
 
 
+FIXTURE = Path(__file__).parent / "fixtures" / "catalogue-2026-11-02.json"
+REAL_MARKETS = json.loads(FIXTURE.read_text(encoding="utf-8"))["response"]["markets"]
+BEFORE_RACING = __import__("datetime").datetime(2026, 11, 2, 8, 30, tzinfo=__import__("datetime").timezone.utc)
+LINE = {"date": "2026-11-02", "slot": "08:00", "line": {"id": "ln_1", "race": "13:00 Plumpton", "horse": "Hard Stare", "lay_target": "1.75 (5% under)", "betfair_cap": "£125"}, "back": {"price": "1.67", "stake": "3", "where": "BY"}}
+
+
 class _FakeBetting:
-    def __init__(self):
+    def __init__(self, catalogue=None):
         self.calls = []
+        self.catalogue = catalogue if catalogue is not None else []
+        self.order_calls = []
+        self.current_responses = []
 
     def list_market_catalogue(self, **kwargs):
         self.calls.append(kwargs)
-        return []
+        return list(self.catalogue)
+
+    def place_orders(self, **kwargs):
+        self.order_calls.append(("placeOrders", kwargs))
+        return {"status": "SUCCESS", "marketId": kwargs["market_id"], "instructionReports": [{"status": "SUCCESS", "betId": "400000000001", "orderStatus": "EXECUTABLE", "sizeMatched": 0.0, "instruction": kwargs["instructions"][0]}]}
+
+    def cancel_orders(self, **kwargs):
+        self.order_calls.append(("cancelOrders", kwargs))
+        return {"status": "SUCCESS", "instructionReports": [{"status": "SUCCESS", "sizeCancelled": 2.0, "instruction": kwargs["instructions"][0]}]}
+
+    def list_current_orders(self, **kwargs):
+        self.order_calls.append(("listCurrentOrders", kwargs))
+        return self.current_responses.pop(0) if self.current_responses else {"currentOrders": [], "moreAvailable": False}
 
 
 class _FakeClient:
-    def __init__(self, fail=False):
-        self.fail, self.logins, self.logouts, self.betting = fail, 0, 0, _FakeBetting()
+    def __init__(self, fail=False, catalogue=None):
+        self.fail, self.logins, self.logouts, self.betting = fail, 0, 0, _FakeBetting(catalogue)
 
     def login(self):
         self.logins += 1
@@ -185,13 +206,21 @@ class _FakeClient:
         self.logouts += 1
 
 
-def _wire_betfair(fail=False):
+def _wire_betfair(fail=False, catalogue=None):
     from app.betfair import BetfairSession
+    from app.orders import Orders
 
-    client = _FakeClient(fail=fail)
+    client = _FakeClient(fail=fail, catalogue=catalogue)
     creds = {"betfair_username": "u", "betfair_password": "p", "betfair_app_key": "k", "betfair_cert_pem": "c", "betfair_key_pem": "k"}
     main.svc.betfair = BetfairSession(main.svc.orders_store, main.svc.activity, client_factory=lambda *a, **k: client, credential=creds.__getitem__)
+    main.svc.orders = Orders(main.svc.orders_store, main.svc.settings, main.svc.activity, main.svc.betfair)
+    main.svc.orders.clock = lambda: BEFORE_RACING
     return client
+
+
+def _real_mode():
+    main.svc.store.put(PREFIX, {"values": {"operators": [OPERATOR], "mode": "real", "page_access_confirmed": True, "placing_enabled": True}, "updated_by": "test"}, 1_000_000_000_001)
+    main.svc.settings.load()
 
 
 def test_betfair_actions_need_an_operator_and_nothing_logs_in_by_itself(client):
@@ -252,3 +281,80 @@ def test_a_failed_login_is_424_once_then_409_until_reset(client, operator):
     assert r.status_code == 200 and r.json()["betfair"]["session"] == "none"
     assert client.post("/admin/control/start", headers=operator).status_code == 404
     assert "betfair-login" in client.post("/admin/control/start", headers=operator).json()["detail"]
+
+
+# ---- step 3: orders through the API ------------------------------------------------------
+
+
+def test_order_endpoints_need_an_operator(client):
+    for method, path in [("POST", "/orders/build"), ("POST", "/orders/place"), ("POST", "/orders/cancel"), ("GET", "/orders"), ("GET", "/orders/current"), ("POST", "/orders/test")]:
+        r = client.request(method, path, json={} if method == "POST" else None)
+        assert r.status_code == 401, path
+
+
+def test_orders_need_the_catalogue_so_a_login_first(client, operator):
+    _wire_betfair(catalogue=REAL_MARKETS)
+    r = client.post("/orders/build", headers=operator, json=LINE)
+    assert r.status_code == 409 and "not logged in" in r.json()["detail"]
+    assert client.post("/orders/build", headers=operator, json={**LINE, "extra": 1}).status_code == 422
+    assert client.post("/orders/place", headers=operator, json={**LINE, "ticket": "nothex"}).status_code == 422
+
+
+def test_paper_order_end_to_end_builds_records_and_sends_nothing(client, operator):
+    fake = _wire_betfair(catalogue=REAL_MARKETS)
+    main.svc.settings.set_placing(True, "test", "paper trial")
+    assert client.post("/admin/control/betfair-login", headers=operator).status_code == 200
+    r = client.post("/orders/build", headers=operator, json=LINE)
+    assert r.status_code == 200
+    built = r.json()
+    assert built["status"] == "ok" and built["mode"] == "paper" and built["price"] == "1.75" and built["size"] == "2.86" and built["liability"] == "2.15"
+    assert built["market_id"] == "1.264841544" and built["selection_id"] == 81578849 and built["runner_name"] == "Hard Stare"
+    r = client.post("/orders/place", headers=operator, json={**LINE, "ticket": built["ticket"], "reason": "paper trial"})
+    assert r.status_code == 200
+    placed = r.json()
+    assert placed["event"] == "placed" and placed["sent"] is False and placed["bet_id"] is None and placed["by"] == OPERATOR
+    assert fake.betting.order_calls == []  # paper: nothing left the server
+    r = client.post("/orders/place", headers=operator, json={**LINE, "ticket": built["ticket"]})
+    assert r.status_code == 409 and "never placed twice" in r.json()["detail"]
+    r = client.get("/orders?date=2026-11-02", headers=operator)
+    assert r.status_code == 200 and r.json()["at_risk"] == {"paper": "2.15", "real": "0.00"} and [x["event"] for x in r.json()["records"]] == ["placed", "refused"]
+    r = client.get("/orders/current?date=2026-11-02", headers=operator)
+    assert r.status_code == 200 and r.json()["sent"] is False and len(r.json()["orders"]) == 1
+    r = client.post("/orders/cancel", headers=operator, json={"date": "2026-11-02", "order_ref": placed["order_ref"], "reason": "trial over"})
+    assert r.status_code == 200 and r.json()["event"] == "cancelled" and r.json()["sent"] is False
+    assert client.get("/orders/current?date=2026-11-02", headers=operator).json()["orders"] == []
+    r = client.post("/orders/test", headers=operator, json={"date": "2026-11-02", "market_id": "1.264841544", "selection_id": 81578849, "confirmation": "I confirm the real test order: back 2.00 at 1000"})
+    assert r.status_code == 409 and "the stored settings say paper" in r.json()["detail"]
+    assert fake.betting.order_calls == []
+    stored = main.svc.orders_store.names("orders/2026-11-02/")
+    assert [main.svc.orders_store.get(n)["event"] for n in stored] == ["placed", "refused", "cancelled"]
+    status = client.get("/status", headers=operator).text
+    assert "0 order call(s) (sent only in real mode; paper sends nothing)" in status
+    events = [e["event"] for e in client.get("/admin/activity", headers=operator).json()]
+    assert events[:3] == ["order_cancelled", "order_refused", "order_placed"]
+
+
+def test_the_test_order_end_to_end_in_real_mode(client, operator):
+    fake = _wire_betfair(catalogue=REAL_MARKETS)
+    _real_mode()
+    assert client.post("/admin/control/betfair-login", headers=operator).status_code == 200
+    body = {"date": "2026-11-02", "market_id": "1.264841544", "selection_id": 81578849, "confirmation": "yes"}
+    r = client.post("/orders/test", headers=operator, json=body)
+    assert r.status_code == 409 and "exact words" in r.json()["detail"] and fake.betting.order_calls == []
+    fake.betting.current_responses = [
+        {"currentOrders": [{"betId": "400000000001", "status": "EXECUTABLE", "sizeMatched": 0.0, "sizeRemaining": 2.0, "priceSize": {"price": 1000.0, "size": 2.0}}], "moreAvailable": False},
+        {"currentOrders": [], "moreAvailable": False},
+    ]
+    r = client.post("/orders/test", headers=operator, json={**body, "confirmation": "I confirm the real test order: back 2.00 at 1000"})
+    assert r.status_code == 200, r.text
+    rec = r.json()
+    assert rec["event"] == "test_order" and rec["verdict"] == "passed: placed, seen, cancelled, gone" and rec["bet_id"] == "400000000001"
+    assert [c[0] for c in fake.betting.order_calls] == ["placeOrders", "listCurrentOrders", "cancelOrders", "listCurrentOrders"]
+    sent = fake.betting.order_calls[0][1]
+    assert sent["market_id"] == "1.264841544" and sent["customer_strategy_ref"] == "FB13-TEST" and sent["instructions"][0]["side"] == "BACK"
+    assert sent["instructions"][0]["limitOrder"] == {"size": 2.0, "price": 1000.0, "persistenceType": "LAPSE"}
+    assert client.get("/orders?date=2026-11-02", headers=operator).json()["at_risk"] == {"paper": "0.00", "real": "2.00"}
+    betfair_records = [main.svc.orders_store.get(n)["operation"] for n in main.svc.orders_store.names("betfair/")]
+    assert betfair_records == ["login", "listMarketCatalogue", "placeOrders", "listCurrentOrders", "cancelOrders", "listCurrentOrders"]
+    status = client.get("/status", headers=operator).text
+    assert "4 order call(s)" in status

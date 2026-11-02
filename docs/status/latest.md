@@ -1,35 +1,33 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 06:31 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 07:05 UTC, by the
 build agent, from the clock.
 
-**State:** 0.6.4 is deployed and ready for the login. Cloud Build 2103e1b5
-(ca06459) passed, 68 tests; revision `fb13-trade-slip-api-00004-9vw` runs
-image `:ca06459`, one instance, always on, CPU always allocated, maximum one.
-`/health` answers 0.6.4; `/ready` says storage gcs, settings loaded at
-06:30:49 UTC, Access configured, Betfair session none (the new instance
-starts clean, so the failed state of the first login is gone with the old
-one). The page is live at 0.6.4. No login attempted; the build agent does
-not log in. Placing is disabled. No order call exists.
-
-**What this deploy carries:** the certificate pair as a tuple (the first
-login's cause); the HTTP trail in every Betfair record; 424, never 502, for a
-failed Betfair call, with the Pages Function and the page never passing
-Cloudflare's 502/504 page off as the server's words; and object names from
-one process that never share a millisecond, so "newest" is the last written.
+**State:** the first login and catalogue read succeeded (Charles, 06:41 and
+06:42 UTC); the records are read back and the catalogue kept as a fixture.
+Step 3 is built, paper only, committed locally as 0.7.0, not pushed: the
+order builder (LAY at the tick below the lay target, size from the ruling,
+LAPSE, one order per line, every refusal named), the paper ledger under
+`orders/<date>/`, the real path behind the stored mode and the kill switch,
+and the test order (BACK 2.00 at 1000, placed, seen, cancelled, gone; real
+mode only, with the sentence typed). No order of any kind has been sent.
+The live server is 0.6.4 (revision 00004-9vw), logged in, mode paper,
+placing disabled. Real mode stays off until Charles writes the settings
+version himself.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- On the page, in order: Refresh status (session none); Log in to Betfair,
-  once; Read the markets for today. Then the build agent reads the stored
-  records back from `gs://chiops-fb13-orders/betfair/2026-11-02/` and
-  reports the count, the first and last off, one sample market with runners,
-  the session state and the HTTP trail of the login and the catalogue call.
+- The word to push 9d2bb50 (status) and the 0.7.0 commit. The server push
+  replaces the instance and drops the Betfair session; he logs in again.
 - At 08:00 UK: paste the real 08:00 slip, Resolve the lines on this page.
+- Rulings on the choices flagged in CHANGELOG 0.7.0 (tick down; the Betfair
+  cap as size; placed once a day; the day's risk counts cancelled orders; the
+  minimum-bet rule from the library's table).
+- The settings version for real mode, then "go" for the test order.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** pushed ca06459 on Charles's word, watched the build pass and
-deploy, read the service back, called `/health` and `/ready`, confirmed the
-page bundle is 0.6.4.
+**Last did:** read the three Betfair records back; kept the catalogue as
+`server/tests/fixtures/catalogue-2026-11-02.json`; built step 3 with tests
+(95 pytest, 109 vitest, none run here); updated README and CHANGELOG.
 
 **Found and reported, not acted on:**
 - The pages.dev addresses serve the page without Access. The API refuses

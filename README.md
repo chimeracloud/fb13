@@ -32,13 +32,13 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture. The 0.6.5 and 0.6.6 Pages builds failed on tests (a CSV row split on commas; three CSV rows compared as literals without the nine new columns; a six-column header rule that caught the missing-column test); 0.6.7 fixes them |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 112 tests (9 for the Pages Function, 9 for the page's calls to its server, 6 for the six-cell layout from the fourth real paste), run by every Pages build before `vite build` |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 116 tests (9 for the Pages Function, 9 for the page's calls to its server, 6 for the six-cell layout from the fourth real paste, 4 for the test order's controls), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
 | v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
-| v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
+| v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Built 2 November 2026, 0.7.0: the builder with every refusal named, the paper ledger, the real path behind the stored mode and the kill switch, the test order (BACK 2.00 at 1000, placed and cancelled, real mode only with the sentence typed). No order sent. Real mode stays off until Charles writes the settings version |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
-| v1 5 | Tests from real data | Server tests written alongside each step: 68 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver's matching is tested against the first real catalogue once it is stored |
+| v1 5 | Tests from real data | Server tests written alongside each step: 95 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver and the order builder are tested against the first real catalogue, 2 November 2026 (`server/tests/fixtures/catalogue-2026-11-02.json`): all 30 markets resolve from their own time, venue and first runner |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -302,10 +302,10 @@ Charles's rules of 2 November 2026, as built:
   as "The origin web server returned an invalid or incomplete response to
   Cloudflare" instead of the server's words. The server never answers 502 or
   504; the Pages Function never passes one on (below).
-- **Read only.** The only market call is listMarketCatalogue for one London
-  day's horse racing (event type 7), countries GB and IE, market type WIN, sorted
-  first to start, with EVENT, MARKET_START_TIME and RUNNER_DESCRIPTION. No order
-  call exists in the code.
+- **The market call** is listMarketCatalogue for one London day's horse
+  racing (event type 7), countries GB and IE, market type WIN, sorted first to
+  start, with EVENT, MARKET_START_TIME and RUNNER_DESCRIPTION. Step 2 was read
+  only; step 3 (below) adds the order calls, sent only in real mode.
 - **The resolver** (`server/app/resolver.py`, pure functions): a slip line's
   race cell "13:40 Cork" is a UK local time and a course; the time becomes the
   UTC instant Betfair shows, the course is matched to the market's venue, and
@@ -329,10 +329,58 @@ Charles's rules of 2 November 2026, as built:
   session out at shutdown, and the new instance starts logged out: an operator
   logs in again, by hand. So the server is not redeployed during racing.
 
+### Step 3: the order builder, paper first
+
+Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
+
+- **What a Place builds.** From a slip line whose back leg is recorded as
+  Placed: the market and runner from the resolver; a LAY LIMIT order at the
+  slip's lay target moved down to a valid Betfair tick (never above the
+  target); size = back stake x back price / lay price, down to the penny;
+  liability = size x (price - 1), the money at risk; persistence LAPSE;
+  `customerOrderRef` `FB13-YYYYMMDD-HHMM-<12 hex of the line>` (31
+  characters) and `customerStrategyRef` `FB13-HHMM` (the slot). The exact
+  placeOrders body is shown before anything is sent, with a sixteen-character
+  ticket; a Place must present that ticket, and a build that differs is
+  refused. `POST /orders/build` returns the order and every reason it would be
+  refused, so the confirm panel (step 4) can show both.
+- **Refusals, each named**: the kill switch; the stored mode (real needs the
+  stored mode real and Charles's Access confirmation); the line not resolved;
+  the race already started; a cell that does not read as a number; a lay
+  target outside 1.01 to 1000; a size below Betfair's minimum-bet rule (size
+  at or above the currency minimum, or payout at or above the minimum payout,
+  from betfairlightweight's currency table); a size above the slip's Betfair
+  cap for the course; liability above the per-order cap; the day's money at
+  risk for the mode above the per-day cap; the line already placed that day in
+  that mode (cancelled or not). Paper and real are counted separately.
+- **Paper** builds the exact order, records it under `orders/<date>/` in the
+  orders bucket as `placed` with `sent: false`, and sends nothing. **Real**
+  sends it through the session and records Betfair's report (`placed` with
+  the bet id, or `place_failed`). Cancel is a separate, deliberate call by
+  reference (`cancelled`, `cancel_failed`). A refused Place is recorded too.
+- **The test order** (Charles, 2 November 2026): one BACK of 2.00 at the
+  maximum price 1000, which cannot match. placeOrders, then listCurrentOrders
+  to see it (EXECUTABLE, nothing matched), then cancelOrders, then
+  listCurrentOrders to see it gone; one record, `test_order`, with the four
+  steps and a verdict. Refused unless the stored mode is real, the kill switch
+  is off, Access is confirmed, the session is logged in, the market is in
+  today's catalogue and not yet run, the caps hold, and the operator typed
+  exactly: `I confirm the real test order: back 2.00 at 1000`. Its references
+  are `FB13-TEST`; it is never a line's order; its 2.00 counts toward the real
+  day's money at risk. The page's server panel carries its controls, enabled
+  only when the stored mode is real.
+- **Choices made by the build agent, awaiting Charles's ruling**: tick down,
+  never up; the slip's Betfair cap read as the most that may be laid at that
+  course in backer's stake; a line placed once that day stays placed,
+  cancelled or not; the day's money at risk counts cancelled orders and the
+  test order; the minimum-bet figures from betfairlightweight 2.24.0 (GBP
+  minimum size 1, minimum payout 10; Betfair's pages show 1 in one version
+  and 2 in another).
+
 ### Endpoints
 
 Thirteen of the shell, per CHI-POL-008 with its 18 September 2026 amendment,
-plus step 2's three actions and two content endpoints.
+plus step 2's three actions and two content endpoints, plus step 3's six.
 
 | Endpoint | What | Token |
 | --- | --- | --- |
@@ -354,13 +402,19 @@ plus step 2's three actions and two content endpoints.
 | `POST /admin/control/betfair-reset` | clear a failed, expired or logged-out state; logs nothing in | operator |
 | `GET /betfair/markets?date=YYYY-MM-DD` | the day's GB and IE win markets with runners and a summary; London today by default; 409 when not logged in | operator |
 | `POST /resolve` | `{"date": "...", "lines": [{"id", "race", "horse"}]}`: each line to a market and runner, or a flag | operator |
+| `POST /orders/build` | `{"date", "slot", "line": {"id", "race", "horse", "lay_target", "betfair_cap"}, "back": {"price", "stake", "where"}}`: the order a Place would send, its ticket, and every refusal; nothing sent or stored | operator |
+| `POST /orders/place` | the same body plus `"ticket"` and `"reason"`: paper records and sends nothing; real sends; 409 with the refusals | operator |
+| `POST /orders/cancel` | `{"date", "order_ref", "reason"}`: a separate, deliberate call; 404 unknown, 409 already cancelled | operator |
+| `GET /orders?date=` | the day's ledger: records, the day's money at risk per mode, the caps | operator |
+| `GET /orders/current?date=` | open orders: the paper ledger's in paper mode; Betfair's listCurrentOrders for FB13's references in real mode | operator |
+| `POST /orders/test` | `{"date", "market_id", "selection_id", "confirmation"}`: the test order, real mode only, the sentence typed; 409 otherwise, 424 if a step fails (the record says what stands) | operator |
 
 ### Storage
 
 | Bucket | Holds | Created |
 | --- | --- | --- |
 | `gs://chiops-fb13-config` | `settings/v/` versions; `activity/<date>/` events | 2 November 2026 |
-| `gs://chiops-fb13-orders` | from step 2: `betfair/<UTC date>/` every request to Betfair and every response, `resolutions/<date>/` what the resolver was asked and answered; from step 3: order events | 2 November 2026 |
+| `gs://chiops-fb13-orders` | from step 2: `betfair/<UTC date>/` every request to Betfair and every response, `resolutions/<date>/` what the resolver was asked and answered; from step 3: `orders/<date>/` every order event (placed, refused, cancelled, place_failed, cancel_failed, test_order), each with the exact order and, when sent, Betfair's report | 2 November 2026 |
 
 Both: London, uniform access, public access prevented, object versioning on.
 `fb13-sa` holds `roles/storage.objectCreator` and `roles/storage.objectViewer`
@@ -517,6 +571,15 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   direct dependencies are exact-pinned, but their sub-dependencies resolve at
   build time, so two builds days apart can differ underneath. To be revisited
   by generating a lock in CI.
+- **Course names.** Betfair's venue is "Chelmsford City"; a slip that says
+  "Chelmsford" is flagged, not guessed, with the venue named. Which names
+  Mark's slip uses is known only from real slips; the first real resolve at
+  08:00 UK on 2 November 2026 is the test.
+- **The build agent's order choices** (step 3, above) stand until Charles
+  rules: tick down; the Betfair cap as size; placed once a day; the day's
+  risk counting cancelled orders; the minimum-bet figures from the library's
+  table. With the caps at 5.00 an order, a slip line at the page's default
+  stake of 50 is refused in paper too (liability 35.78 at 1.67/1.75).
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0.
@@ -592,6 +655,7 @@ functions/api/[[path]].js   the Pages Function: /api/* to the server, with the A
 src/pages-function.test.js  its tests (vitest, Node environment)
 src/api.js                  the page's calls to /api/*, every answer in words, never a throw
 src/resolve.js              what the page sends to resolve and how an answer reads
+src/orders.js               the test order's controls: the sentence, the body, the summary
 server/app/main.py          the FastAPI app: the endpoints, the gate, the middleware
 server/app/betfair.py       the Betfair session: one login, keepAlive, listMarketCatalogue, every call recorded
 server/app/resolver.py      a slip line to a market and a runner, pure functions, flags never guesses
@@ -599,6 +663,8 @@ server/app/settings.py      the stored settings: mode, caps, kill switch, operat
 server/app/access.py        Cloudflare Access token verification and the operator check
 server/app/activity.py      the append-only activity log and the server-sent events
 server/app/storage.py       create-only JSON objects in GCS, and a memory store for tests
+server/app/orders.py        step 3: the order builder, the ledger, the real path, the test order
+server/tests/fixtures/      the first real catalogue, 2 November 2026, read back from the orders bucket
 server/app/credentials.py   get_credential(name): Secret Manager behind one interface (CHI-POL-040)
 server/app/metrics.py       counters and the Prometheus text
 server/app/models.py        request bodies, Pydantic v2, extra forbidden

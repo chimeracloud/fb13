@@ -57,7 +57,8 @@ from app.activity import Activity
 from app.betfair import LONDON, BetfairRefused, BetfairSession, summarise
 from app.credentials import credential_names, reads_so_far
 from app.metrics import Metrics
-from app.models import ConfigUpdate, ControlBody, ResolveRequest
+from app.models import CancelRequest, ConfigUpdate, ControlBody, OrderRequest, PlaceRequest, ResolveRequest, TestOrderRequest
+from app.orders import OrderRefused, Orders
 from app.resolver import resolve_lines
 from app.settings import Settings, SettingsError
 from app.storage import Store, open_store
@@ -86,20 +87,24 @@ class Services:
     verifier: AccessVerifier
     metrics: Metrics
     betfair: BetfairSession
+    orders: Orders
 
 
 def build_services() -> Services:
     store = open_store(os.environ.get("FB13_CONFIG_BUCKET", "").strip() or None)
     orders_store = open_store(os.environ.get("FB13_ORDERS_BUCKET", "").strip() or None)
     activity = Activity(store)
+    settings = Settings(store)
+    betfair = BetfairSession(orders_store, activity)
     return Services(
         store=store,
         orders_store=orders_store,
-        settings=Settings(store),
+        settings=settings,
         activity=activity,
         verifier=AccessVerifier(os.environ.get("CF_ACCESS_TEAM_DOMAIN", ""), os.environ.get("CF_ACCESS_AUD", "")),
         metrics=Metrics(),
-        betfair=BetfairSession(orders_store, activity),
+        betfair=betfair,
+        orders=Orders(orders_store, settings, activity, betfair),
     )
 
 
@@ -257,7 +262,7 @@ def info(email: str = Depends(require_operator)) -> dict[str, Any]:
         "access": {"configured": svc.verifier.configured, "issuer": svc.verifier.issuer or None, "certs": svc.verifier.certs_url or None},
         "betfair": {
             **svc.betfair.view(),
-            "note": "step 2: read only. login, keepAlive, logout and listMarketCatalogue on the Delayed key; no order call exists",
+            "note": "login, keepAlive, logout, listMarketCatalogue on the Delayed key; placeOrders, cancelOrders and listCurrentOrders exist from step 3 and are sent only in real mode, behind the kill switch and the caps; paper sends nothing",
         },
         "interim": INTERIM,
     }
@@ -302,7 +307,7 @@ def status_text(email: str = Depends(require_operator)) -> PlainTextResponse:
         + (f", logged in at {b['logged_in_at']}" if b["logged_in_at"] else "")
         + (f", last keepAlive {b['last_keepalive_at']}" if b["last_keepalive_at"] else "")
         + (f", error: {b['error']}" if b["error"] else "")
-        + "; read only, no order call exists",
+        + f"; {b['order_calls']} order call(s) (sent only in real mode; paper sends nothing)",
         f"uptime: {totals['uptime_s']} s",
     ]
     return PlainTextResponse("\n".join(lines) + "\n")
@@ -484,6 +489,70 @@ def resolve(body: ResolveRequest, email: str = Depends(require_operator)) -> dic
         log.error("resolution not stored: %s", type(exc).__name__, extra={"event": "resolution_store_error"})
     svc.activity.record("resolve", email, date=day.isoformat(), lines=len(lines), resolved=resolved, flagged=len(lines) - resolved)
     return {"date": day.isoformat(), "catalogue_fetched_at": found["fetched_at"], "from_cache": found["from_cache"], "resolved": resolved, "flagged": len(lines) - resolved, "resolutions": resolutions}
+
+
+# ---- step 3: orders. Paper builds and records; real sends, behind the stored mode and the kill switch. ----
+
+
+def _markets_for(day: date, email: str) -> list[dict[str, Any]]:
+    try:
+        return svc.betfair.markets(day, by=email)["markets"]
+    except BetfairRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+
+
+@app.post("/orders/build")
+def orders_build(body: OrderRequest, email: str = Depends(require_operator)) -> dict[str, Any]:
+    """What a Place would send, and every reason it would be refused. Nothing is sent or stored."""
+    day = parse_day(body.date)
+    return svc.orders.build(body.model_dump(), day, _markets_for(day, email))
+
+
+@app.post("/orders/place")
+def orders_place(body: PlaceRequest, email: str = Depends(require_operator)) -> dict[str, Any]:
+    day = parse_day(body.date)
+    try:
+        return svc.orders.place(body.model_dump(), day, _markets_for(day, email), email)
+    except OrderRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+
+
+@app.post("/orders/cancel")
+def orders_cancel(body: CancelRequest, email: str = Depends(require_operator)) -> dict[str, Any]:
+    """A separate, deliberate call."""
+    try:
+        return svc.orders.cancel(body.order_ref, body.reason, email, parse_day(body.date))
+    except OrderRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+
+
+@app.get("/orders")
+def orders_view(
+    day_text: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    email: str = Depends(require_operator),
+) -> dict[str, Any]:
+    return svc.orders.view(parse_day(day_text))
+
+
+@app.get("/orders/current")
+def orders_current(
+    day_text: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    email: str = Depends(require_operator),
+) -> dict[str, Any]:
+    try:
+        return svc.orders.current(parse_day(day_text), email)
+    except (OrderRefused, BetfairRefused) as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+
+
+@app.post("/orders/test")
+def orders_test(body: TestOrderRequest, email: str = Depends(require_operator)) -> dict[str, Any]:
+    """One BACK of 2.00 at 1000, placed, seen, cancelled, seen gone. Real mode only, with the sentence typed."""
+    day = parse_day(body.date)
+    try:
+        return svc.orders.test_order(body.market_id, body.selection_id, body.confirmation, email, day, _markets_for(day, email))
+    except OrderRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
 
 
 KNOWN_PATHS = frozenset(getattr(r, "path", "") for r in app.routes)

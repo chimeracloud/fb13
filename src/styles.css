@@ -700,6 +700,24 @@ pre.diag {
   overflow-wrap: anywhere;
 }
 
+/* ---- version 1, step 3: the test order ---- */
+
+.server .test-order {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.server .test-order h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.server .test-order select,
+.server .test-order input {
+  max-width: 100%;
+}
+
 /* ---- the six-cell layout of 2 November 2026 ---- */
 
 .line .extracted {

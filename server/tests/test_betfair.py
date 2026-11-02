@@ -34,12 +34,29 @@ CREDS = {
 class FakeBetting:
     def __init__(self, result=None, error=None):
         self.result, self.error, self.calls = result if result is not None else [], error, []
+        self.order_calls = []
+        self.order_error = None
+        self.place_response = {"status": "SUCCESS", "marketId": "1.264841544", "instructionReports": [{"status": "SUCCESS", "betId": "400000000001", "orderStatus": "EXECUTABLE", "sizeMatched": 0.0, "instruction": {}}]}
 
     def list_market_catalogue(self, **kwargs):
         self.calls.append(kwargs)
         if self.error:
             raise self.error
         return self.result
+
+    def place_orders(self, **kwargs):
+        self.order_calls.append(("placeOrders", kwargs))
+        if self.order_error:
+            raise self.order_error
+        return self.place_response
+
+    def cancel_orders(self, **kwargs):
+        self.order_calls.append(("cancelOrders", kwargs))
+        return {"status": "SUCCESS", "instructionReports": [{"status": "SUCCESS", "sizeCancelled": 2.0, "instruction": kwargs["instructions"][0]}]}
+
+    def list_current_orders(self, **kwargs):
+        self.order_calls.append(("listCurrentOrders", kwargs))
+        return {"currentOrders": [], "moreAvailable": False}
 
 
 class FakeSession:
@@ -249,6 +266,33 @@ def test_logout_gives_the_session_back():
     assert view["session"] == "logged_out" and client.logouts == 1
     ops = [store.get(n)["operation"] for n in store.names(RECORD_PREFIX)]
     assert ops == ["login", "keepAlive", "logout"]
+
+
+def test_order_calls_need_a_session_send_the_exact_body_and_are_recorded():
+    client = FakeClient()
+    s, store, activity, factory = make(client)
+    request = {"marketId": "1.264841544", "instructions": [{"orderType": "LIMIT", "selectionId": 81578849, "handicap": 0, "side": "BACK", "limitOrder": {"size": 2.0, "price": 1000.0, "persistenceType": "LAPSE"}, "customerOrderRef": "FB13-TEST-083000"}], "customerRef": "FB13-TEST-083000", "customerStrategyRef": "FB13-TEST"}
+    with pytest.raises(BetfairRefused) as exc:
+        s.place_orders(request, "x@y.z")
+    assert exc.value.status == 409 and "nothing is sent" in exc.value.detail and client.betting.order_calls == []
+    s.login("x@y.z")
+    out = s.place_orders(request, "x@y.z")
+    assert out["instructionReports"][0]["betId"] == "400000000001"
+    assert client.betting.order_calls == [("placeOrders", {"market_id": "1.264841544", "instructions": request["instructions"], "customer_ref": "FB13-TEST-083000", "customer_strategy_ref": "FB13-TEST", "lightweight": True})]
+    s.cancel_orders("1.264841544", [{"betId": "400000000001"}], "FB13-TEST-083000", "x@y.z")
+    s.current_orders("x@y.z", bet_ids=["400000000001"])
+    assert [c[0] for c in client.betting.order_calls] == ["placeOrders", "cancelOrders", "listCurrentOrders"]
+    assert client.betting.order_calls[2][1] == {"bet_ids": ["400000000001"], "customer_strategy_refs": None, "order_projection": "ALL", "lightweight": True}
+    recs = [store.get(n) for n in store.names(RECORD_PREFIX)]
+    assert [r["operation"] for r in recs] == ["login", "placeOrders", "cancelOrders", "listCurrentOrders"]
+    assert recs[1]["request"] == request and recs[1]["response"] == {"status": "RETURNED", "body": client.betting.place_response}
+    assert s.view()["order_calls"] == 3 and s.view()["calls"] == 0
+    client.betting.order_error = RuntimeError("INVALID_SESSION_INFORMATION token=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789")
+    with pytest.raises(BetfairRefused) as exc:
+        s.place_orders(request, "x@y.z")
+    assert exc.value.status == 424 and "AbCdEf" not in exc.value.detail
+    assert s.state == "expired"  # a session error marks the session expired, as a failed keepAlive does
+    assert store.get(store.names(RECORD_PREFIX)[-1])["response"]["status"] == "FAILED"
 
 
 def test_time_helpers_and_scrub():

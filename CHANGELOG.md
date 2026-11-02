@@ -2,6 +2,88 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.7.0] — 2026-11-02 — version 1, step 3: the order builder, paper first; the test order
+
+### Why
+Charles's message of 2 November 2026, after the first login and catalogue
+read succeeded: read the stored records back, keep the catalogue as a real
+fixture, then Step 3, paper only, with one addition: a test order path that
+cannot be mistaken for a bet. Real mode stays off; Charles writes the settings
+version himself after this report and his go.
+
+### Read back (part 1)
+Three records in `gs://chiops-fb13-orders/betfair/2026-11-02/`: the failed
+login of 05:53 (old code, no HTTP trail); the login of 06:41:27 UTC, one POST
+to identitysso-cert.betfair.com/api/certlogin answered 200 in 129.5 ms;
+listMarketCatalogue at 06:42:15 UTC, one POST to
+api.betfair.com/exchange/betting/json-rpc/v1 answered 200 in 64.0 ms, 30 GB
+WIN markets, 285 runners, first off 13:00 Plumpton, last off 20:30
+Wolverhampton (Plumpton 7, Southwell 6, Wolverhampton 9, Chelmsford City 8).
+Session logged_in. Nothing token-shaped in any record. The catalogue record is
+kept as `server/tests/fixtures/catalogue-2026-11-02.json` with the operator's
+address replaced by "operator".
+
+### Added
+- `server/app/orders.py`: the order from a slip line whose back leg is
+  recorded: resolve the market and runner; LAY LIMIT at the lay target moved
+  down to a valid Betfair tick; size = back stake x back price / lay price,
+  down to the penny; liability size x (price - 1); persistence LAPSE;
+  customerOrderRef `FB13-YYYYMMDD-HHMM-<12 hex of the line>`,
+  customerStrategyRef `FB13-HHMM`; every refusal named (kill switch, mode,
+  unresolved, race started, unreadable cells, outside the price ladder, below
+  Betfair's minimum bet rule, above the slip's Betfair cap, above the
+  per-order cap, above the per-day cap for the mode, line already placed). A
+  Place must present the ticket of the build it confirmed; a different build
+  is refused. Paper records the exact placeOrders body and sends nothing. Real
+  sends it and records Betfair's report. Cancel is a separate call by
+  reference. Records under `orders/<date>/` in the orders bucket: placed,
+  refused, cancelled, place_failed, cancel_failed, test_order.
+- The test order: one BACK of 2.00 at 1000, placeOrders, listCurrentOrders
+  (seen, EXECUTABLE, nothing matched), cancelOrders, listCurrentOrders (gone),
+  one record with the four steps and a verdict. Refused unless the stored mode
+  is real, the kill switch is off, Access is confirmed, the session is logged
+  in, the market is in today's catalogue and not started, the caps hold, and
+  the operator typed exactly: "I confirm the real test order: back 2.00 at
+  1000". Its references are FB13-TEST; it is never a line's order; its 2.00
+  counts toward the real day's money at risk.
+- `server/app/betfair.py`: placeOrders, cancelOrders, listCurrentOrders on
+  the session, each recorded with its request, Betfair's answer and the HTTP
+  trail; a session error marks the session expired. `order_calls` in the view
+  and on `/status`.
+- Endpoints: `POST /orders/build`, `POST /orders/place`, `POST /orders/cancel`,
+  `GET /orders?date=`, `GET /orders/current?date=`, `POST /orders/test`.
+- The page: the server panel's test-order controls (market and runner from
+  the catalogue, the sentence typed, one button), enabled only when the
+  stored mode is real. `src/orders.js` holds the same sentence.
+
+### Choices made here, flagged for Charles
+- The lay target moves down to the tick, never up.
+- The slip's Betfair cap is read as the most that may be laid at that course
+  in backer's stake (the order's size).
+- A line placed once that day in that mode is never placed again, cancelled
+  or not. The day's money at risk counts every placed order, cancelled or
+  not, and the test order's 2.00.
+- Betfair's minimum-bet rule is taken from betfairlightweight 2.24.0's
+  currency table (GBP: minimum size 1, minimum payout 10); Betfair's own
+  pages show the GBP minimum size as 1 in one version and 2 in another.
+- Nothing is laid once the race has started.
+- With the caps at 5.00 an order, a slip line at stake 50 is refused in paper
+  too (liability 35.78 at 1.67/1.75); a paper trial needs a smaller recorded
+  stake or a higher cap.
+
+### Tests
+- `server/tests/test_orders.py` (17), the resolver against the real
+  catalogue (5: every one of the 30 markets resolves from its own time, venue
+  and first runner; misses are flagged with the candidates; "Chelmsford" for
+  "Chelmsford City" is flagged, a known risk until a real slip shows the
+  course names), the session's order calls (1), the endpoints (4). 95 pytest.
+- `src/orders.test.js` (4). 109 vitest.
+
+### Not changed
+- No order of any kind was sent. Real mode stays off until Charles writes the
+  settings version. The page's Place button per line is step 4.
+- `docs/betfair-master/` (betfairlightweight 2.24.0, put there by Charles for
+  the build agent to read) is ignored by git and never committed.
 ## [0.6.7] — 2026-11-02 — the 0.6.6 Pages build failed too: three more tests
 
 ### Fixed

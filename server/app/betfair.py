@@ -4,9 +4,13 @@ Charles's rules of 2 November 2026: the DELAYED application key only; log in
 once with the certificate, keep the session with keepAlive, and never loop on
 a login failure. A failed login latches: the state becomes "failed", the
 error is kept in words, and no further login is attempted until an operator
-resets the latch by hand (betfair-reset). Read only: listMarketCatalogue for
-the day's GB and IE horse racing WIN markets (event type 7). No order call
-exists in this module.
+resets the latch by hand (betfair-reset). listMarketCatalogue for the day's
+GB and IE horse racing WIN markets (event type 7).
+
+Step 3 adds the order calls: placeOrders, cancelOrders, listCurrentOrders.
+This module only sends and records; app/orders.py decides whether anything
+may be sent at all (the stored mode, the kill switch, the caps, one order per
+line). In paper mode nothing here is ever called for an order.
 
 Every request to Betfair and every response is recorded, append-only, in the
 orders bucket under betfair/<UTC date>/, with the time and the operator who
@@ -203,6 +207,7 @@ class BetfairSession:
         self.last_call_at: str | None = None
         self.login_attempts = 0
         self.calls = 0
+        self.order_calls = 0
         self.records = 0
         self.record_errors = 0
 
@@ -242,6 +247,7 @@ class BetfairSession:
             "last_call_at": self.last_call_at,
             "login_attempts": self.login_attempts,
             "calls": self.calls,
+            "order_calls": self.order_calls,
             "records_stored": self.records,
             "records_not_stored": self.record_errors,
             "error": self.error,
@@ -390,3 +396,61 @@ class BetfairSession:
             self.activity.record("betfair_catalogue", by, date=key, **summarise(markets))
             self._catalogue[key] = (time.monotonic(), markets, fetched_at)
             return {"date": key, "from_cache": False, "fetched_at": fetched_at, "markets": list(markets)}
+
+    # ---- orders (step 3) ------------------------------------------------------
+    # Sent only when app/orders.py says so. Every call and its answer is recorded whatever happens.
+
+    def _order_call(self, operation: str, by: str | None, request: dict[str, Any], call: Callable[[], Any]) -> dict[str, Any]:
+        with self._lock:
+            if not self.logged_in:
+                raise BetfairRefused(409, f"not logged in to Betfair (session: {self.state}); nothing is sent")
+            started = time.monotonic()
+            try:
+                raw = call()
+            except Exception as exc:  # noqa: BLE001
+                err = f"{type(exc).__name__}: {scrub(exc)}"
+                self._record(operation, by, request, {"status": "FAILED", "error": err}, (time.monotonic() - started) * 1000, http_trail(self._client))
+                if "SESSION" in err.upper():
+                    self.state = "expired"
+                    self.error = err
+                    self.activity.record("betfair_session_expired", by, error=err)
+                log.error("betfair %s failed: %s", operation, err, extra={"event": "betfair_order_call_failed", "by": by})
+                raise BetfairRefused(424, f"{operation} failed: {err}") from exc
+            self.order_calls += 1
+            self.last_call_at = now_iso()
+            body = raw if isinstance(raw, dict) else {"body": raw}
+            self._record(operation, by, request, {"status": "RETURNED", "body": body}, (time.monotonic() - started) * 1000, http_trail(self._client))
+            return body
+
+    def place_orders(self, request: dict[str, Any], by: str | None) -> dict[str, Any]:
+        """placeOrders with the exact body orders.py built. Returns Betfair's report as it came."""
+        return self._order_call(
+            "placeOrders",
+            by,
+            request,
+            lambda: self._client.betting.place_orders(
+                market_id=request["marketId"],
+                instructions=request["instructions"],
+                customer_ref=request.get("customerRef"),
+                customer_strategy_ref=request.get("customerStrategyRef"),
+                lightweight=True,
+            ),
+        )
+
+    def cancel_orders(self, market_id: str, instructions: list[dict[str, Any]], customer_ref: str | None, by: str | None) -> dict[str, Any]:
+        request = {"marketId": market_id, "instructions": instructions, "customerRef": customer_ref}
+        return self._order_call(
+            "cancelOrders",
+            by,
+            request,
+            lambda: self._client.betting.cancel_orders(market_id=market_id, instructions=instructions, customer_ref=customer_ref, lightweight=True),
+        )
+
+    def current_orders(self, by: str | None, bet_ids: list[str] | None = None, customer_strategy_refs: list[str] | None = None) -> dict[str, Any]:
+        request = {"betIds": bet_ids, "customerStrategyRefs": customer_strategy_refs, "orderProjection": "ALL"}
+        return self._order_call(
+            "listCurrentOrders",
+            by,
+            request,
+            lambda: self._client.betting.list_current_orders(bet_ids=bet_ids, customer_strategy_refs=customer_strategy_refs, order_projection="ALL", lightweight=True),
+        )

@@ -7,6 +7,7 @@ import { BUILD, buildLabel } from './build.js';
 import { entriesToCsv, entriesToJson, exportFilename, downloadText } from './export.js';
 import { api, explain } from './api.js';
 import { linesForResolve, resolutionLabel, marketsSummary, sessionLabel } from './resolve.js';
+import { TEST_CONFIRMATION, runnersOf, testOrderBody, testOrderSummary } from './orders.js';
 import {
   WHERE_OTHER,
   SIDES,
@@ -266,6 +267,10 @@ function ServerPanel({ date, lines, onResolutions }) {
   const [note, setNote] = useState(null);
   const [markets, setMarkets] = useState(null);
   const [result, setResult] = useState(null);
+  const [testMarket, setTestMarket] = useState('');
+  const [testRunner, setTestRunner] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [testResult, setTestResult] = useState(null);
 
   async function run(label, fn) {
     setBusy(label);
@@ -318,13 +323,31 @@ function ServerPanel({ date, lines, onResolutions }) {
       return r;
     });
 
+  const testOrder = () =>
+    run('test-order', async () => {
+      setTestResult(null);
+      const r = await api('/orders/test', {
+        method: 'POST',
+        body: testOrderBody({ date, marketId: testMarket, selectionId: testRunner, confirmation }),
+      });
+      if (r.ok && r.data) setTestResult(r.data);
+      setConfirmation('');
+      await loadStatus();
+      return r;
+    });
+
   const b = status ? status.betfair : null;
   const session = b ? b.session : null;
+  const realMode = !!status && status.mode === 'real';
+  const testRunners = runnersOf(markets, testMarket);
 
   return (
     <section className="server" aria-label="Server">
       <h2>
-        Server <span className="sub">version 1, step 2: read only. Nothing places.</span>
+        Server{' '}
+        <span className="sub">
+          version 1, step 3: {status ? (realMode ? 'real mode.' : 'paper. Orders are built and recorded; nothing is sent.') : 'mode not read yet.'}
+        </span>
       </h2>
       <p className="status-line">
         {status
@@ -388,6 +411,66 @@ function ServerPanel({ date, lines, onResolutions }) {
           </p>
         </div>
       )}
+      <div className="test-order">
+        <h3>Test order</h3>
+        <p>
+          One BACK of £2.00 at 1000, which cannot match: placed, seen in the current orders, cancelled, seen gone.
+          Real money, real mode only.{' '}
+          {realMode
+            ? 'Choose the market and runner from the catalogue read above, type the sentence, then press the button.'
+            : `The stored mode is ${status ? status.mode : 'not read yet'}; the server refuses it until Charles writes real.`}
+        </p>
+        <div className="row">
+          <select
+            aria-label="Test order market"
+            value={testMarket}
+            onChange={(e) => {
+              setTestMarket(e.target.value);
+              setTestRunner('');
+            }}
+            disabled={!realMode || !markets}
+          >
+            <option value="">{markets ? 'Market…' : 'Read the markets first'}</option>
+            {((markets && markets.markets) || []).map((m) => (
+              <option key={m.market_id} value={m.market_id}>
+                {m.start_london} {m.venue} · {m.market_name}
+              </option>
+            ))}
+          </select>
+          <select aria-label="Test order runner" value={testRunner} onChange={(e) => setTestRunner(e.target.value)} disabled={!realMode || !testMarket}>
+            <option value="">Runner…</option>
+            {testRunners.map((r) => (
+              <option key={r.selection_id} value={String(r.selection_id)}>
+                {r.name} ({r.selection_id})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="row">
+          <input
+            type="text"
+            aria-label="Test order confirmation"
+            placeholder={`Type: ${TEST_CONFIRMATION}`}
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            disabled={!realMode}
+            size={60}
+          />
+          <button
+            type="button"
+            className="primary"
+            onClick={testOrder}
+            disabled={!!busy || !realMode || !testMarket || !testRunner || confirmation.trim() !== TEST_CONFIRMATION}
+          >
+            {busy === 'test-order' ? 'Placing and cancelling…' : 'Place the £2 test back at 1000, then cancel it'}
+          </button>
+        </div>
+        {testResult && (
+          <p className="message ok" role="status">
+            {testOrderSummary(testResult)}
+          </p>
+        )}
+      </div>
     </section>
   );
 }
