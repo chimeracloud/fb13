@@ -1,50 +1,36 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 12:39 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 13:09 UTC, by the
 build agent, from the clock.
 
-**State:** the page is 0.6.7, live: ec4c6d2 (the six-cell layout and its two
-test fixes) was pushed alone by hash on Charles's word; the Cloudflare Pages
-check passed at 12:39:00 UTC and the live bundle showed 0.6.7, stamped
-ec4c6d2, at 12:39:29 UTC. The Pages builds of 0.6.5 and 0.6.6 had failed on
-tests; before this push the suite passed in a one-off tests-only Cloud Build
-(3eea2314, node v22.23.4, 112 tests). origin/main = ec4c6d2. Above it, unpushed: the four server commits
-of step 3 (9014251 status, 0c693e1 0.7.0, bece150 0.7.1, 3dd34e6 0.7.2) and
-this fix, 0.7.3. The server's pytest suite on 3dd34e6 failed 3 of 96 in the
-same kind of build (2a7447ab): one real bug (a Betfair session error was
-never recognised, because the scrubber redacted the error code before the
-check) and two tests that still asserted step 2's wording or one refusal
-where the builder names two. Fixed in 0.7.3 (288b9b6), and green in its own
-tests-only runs: the server suite 96 passed on Python 3.12.16 (f4eef1e9), the
-page suite 116 passed on node v22.23.4 (fbd88e0a). The live server is 0.6.4 (revision 00004-9vw), logged in since
-06:41 UTC, mode paper, placing disabled, untouched. No order of any kind has
-been sent.
+**State:** version 0.7.3 is live on both sides. Charles's word: the seven
+commits above ec4c6d2 were pushed as main (tip dd7ebe3) at about 13:03 UTC.
+Cloud Build 2d309569 (trigger fb13-main): 96 pytest passed on Python 3.12.16,
+image built, revision fb13-trade-slip-api-00005-dhq deployed at 13:05:45 UTC
+and serving 100%; /health answered 0.7.3 at 13:06:12 UTC. The Pages check for
+dd7ebe3 passed at 13:05:05 UTC; the live bundle is 0.7.3, stamped dd7ebe3.
+The old revision gave its Betfair session back at instance stop (logout
+record 13:05:59 UTC, by instance_stop). Charles logged in again himself from
+the page at 13:06:41 UTC and read the markets at 13:06:46 UTC (30 markets);
+both records kept with their HTTP trail. Mode paper, placing disabled. No
+order of any kind has been sent. Nothing logged in by itself.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- Charles pastes the 08:00 slip into the page (now 0.6.7, six-cell layout read)
-  and presses Resolve on the current instance (server 0.6.4).
-- Later, his word to push the server commits (9014251, 0c693e1, bece150,
-  3dd34e6, 288b9b6 and this status commit), both suites green in the cloud on
-  288b9b6. That deploy replaces the instance and drops the
-  Betfair session; he logs in again.
-- After the deploy: Charles writes the settings version for real mode himself
+- Charles pastes the 08:00 slip into the page (0.7.3, six-cell layout read)
+  and presses Resolve.
+- Charles's word for real mode: he writes the settings version himself
   (the exact object and command are in the report of 2 November), then the £2
   test order from the page, with the sentence typed; then the kill switch.
 - The Betfair cap's meaning and Price A and B, confirmed at the handover with
   Mark.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** pushed ec4c6d2 alone by hash (12:3x UTC); the Pages check passed
-at 12:39:00 UTC and 0.6.7 went live at 12:39:29 UTC; no Cloud Build fired (the
-commit touches no server file); the live server and the session untouched.
-Before that: confirmed 0.7.3 green in the cloud (above), and ran the
-tests in one-off tests-only Cloud Builds (a `git archive`
-of the exact commit, an inline config with one step, no trigger, no deploy, no
-new resource: the staging bucket `chiops_cloudbuild` already existed), read the
-logs after each finished, and fixed the three server failures as 0.7.3:
-`server/app/betfair.py` reads the raw error for the word SESSION and the
-scrubber keeps Betfair's error codes; the two stale tests assert what the code
-does. Before that: 0.6.7, the second page-test fix, read from the tests.
+**Last did:** pushed main (seven commits) on Charles's word; watched the
+trigger build, /health and the Pages check; read the new revision's logs and
+the four newest records to confirm that the login on the new instance was
+Charles's own click, not the server's. This status commit is local, unpushed.
+Before that: pushed ec4c6d2 alone (0.6.7 live 12:39 UTC); fixed the three
+server test failures as 0.7.3 after one-off tests-only Cloud Builds.
 
 **Found and reported, not acted on:**
 - The record of a failed Betfair call read "[redacted] token=[redacted]": the
