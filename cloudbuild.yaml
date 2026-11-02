@@ -54,11 +54,13 @@ steps:
       - --region=europe-west2
       - --platform=managed
       - --service-account=fb13-sa@chiops.iam.gserviceaccount.com
-      # At most one instance, so an order can never be built twice by two
-      # instances. Minimum zero until step 2 (Charles, 2 Nov 2026), when the
-      # question of one standing Betfair session is revisited.
-      - --min-instances=0
+      # One instance, always on, CPU always allocated (Charles, 2 Nov 2026, at
+      # step 2): one standing Betfair session, kept alive by the keepAlive loop,
+      # which needs CPU between requests; and at most one instance, so an order
+      # can never be built twice by two instances.
+      - --min-instances=1
       - --max-instances=1
+      - --no-cpu-throttling
       - --cpu=1
       - --memory=512Mi
       - --concurrency=20

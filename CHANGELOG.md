@@ -2,6 +2,15 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.1] — 2026-11-02 — one instance, always on
+
+### Changed
+- `cloudbuild.yaml`: `--min-instances=1`, `--max-instances=1`,
+  `--no-cpu-throttling`. Charles's ruling at step 2, 2 November 2026: one
+  standing Betfair session, kept alive by the keepAlive loop, which needs CPU
+  between requests; the cost of an always-on instance accepted. The server
+  deployed from this commit is the one Charles logs in against.
+
 ## [0.6.0] — 2026-11-02 — version 1, step 2: read only
 
 ### Why

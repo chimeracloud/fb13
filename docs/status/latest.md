@@ -1,11 +1,12 @@
 # FB13 — status
 
 **Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02,
-about 03:50 UTC, by the build agent.
+about 04:05 UTC, by the build agent.
 
 **State:** step 1 is deployed and verified (revision 00001 at 627ec3b,
-`/health` and `/ready` 200, 47 tests passed in Cloud Build). Step 2 is built
-and committed locally as 0.6.0, not pushed: the Betfair session on the
+`/health` and `/ready` 200, 47 tests passed in Cloud Build). Step 2 is pushed as 0.6.0
+(7c9b01c), and 0.6.1 sets one always-on instance with CPU always allocated
+(Charles's ruling at step 2): the Betfair session on the
 Delayed key (login once with the certificate at an operator's ask, keepAlive,
 a failed login latched and never retried), listMarketCatalogue for the day's
 GB and IE win markets, the resolver, the page's server panel, every Betfair
@@ -15,8 +16,8 @@ the word he gave on 2 November. No order call exists in the code. Placing is
 disabled.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- The word to push 0.6.0. The push builds the page (104 tests) and the server
-  (65 tests, then the deploy).
+- The Pages and Cloud Build results for 7c9b01c and for 0.6.1 (the build
+  agent watches Cloud Build; Pages is Charles's to report).
 - Then, on the page: Refresh status, Log in to Betfair, Read the markets for
   today, and at 08:00 UK paste the real 08:00 slip and Resolve. The build
   agent reads the stored catalogue and resolutions back from the bucket and

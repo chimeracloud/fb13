@@ -277,10 +277,11 @@ Charles's rules of 2 November 2026, as built:
   "Betfair: resolved" with the market id, runner and selection id, or
   "Betfair: not resolved" with the reason. The resolution is held in memory
   only and asked for again next time.
-- **The session and the instance.** With minimum instances at zero, the
-  session dies with the instance when Cloud Run scales it away after idleness,
-  and the next instance starts logged out: an operator logs in again, by hand.
-  Charles revisits the minimum at step 2.
+- **The session and the instance.** One instance, always on, CPU always
+  allocated (Charles, 2 November 2026): the session lives as long as the
+  instance, kept by keepAlive. A redeploy replaces the instance, logs the old
+  session out at shutdown, and the new instance starts logged out: an operator
+  logs in again, by hand. So the server is not redeployed during racing.
 
 ### Endpoints
 
@@ -416,10 +417,10 @@ carries every flag the service must have, so the live service always matches
 the file. Read back after the first deploy on 2 November 2026: every flag as
 the file, plus two platform defaults the file does not set, startup CPU boost
 on the revision and a service-level maximum of 100 instances, which the
-revision's maximum of 1 governs. Recorded, not changed. At most one instance, so an order can never be built
-twice by two instances; minimum zero until step 2, when the question of one
-standing Betfair session is revisited (Charles, 2 November 2026). Its invoker
-IAM check is off: the Access token, verified on every
+revision's maximum of 1 governs. Recorded, not changed. One instance, always on, CPU always allocated
+(Charles, 2 November 2026, at step 2): one standing Betfair session, kept
+alive between requests; and at most one, so an order can never be built twice
+by two instances. Its invoker IAM check is off: the Access token, verified on every
 request, is the gate (Charles, 2 November 2026).
 
 ## Dependencies
@@ -501,11 +502,11 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   venue names are expected to agree for GB and IE courses; where they do not,
   the line is flagged with the venues Betfair has at that time, and Charles
   decides any mapping.
-- **Minimum instances zero until step 2** (Charles, 2 November 2026): the
-  first call after idleness waits for a cold start of a few seconds, and from
-  step 2 each cold start would mean a fresh Betfair login, which is why the
-  setting is revisited then. Maximum one, so two instances can never build
-  the same order.
+- **Every redeploy of the server drops the Betfair session.** The instance is
+  replaced, the old one logs out at shutdown, and an operator logs in again on
+  the new one. Server pushes therefore wait for a time outside racing, and the
+  trigger ignores page-only commits. Maximum one instance, so two can never
+  build the same order.
 - **The Delayed key is shared.** fsu1b-sa may also read `betfair-app-key-delayed`.
   FB13 keeps its own login session and never borrows another's, but Betfair
   may still treat two sessions on one key as it did on 17 May, 31 July and 11
