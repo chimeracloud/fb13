@@ -66,7 +66,8 @@ class FakeClient:
     def login(self):
         self.logins += 1
         if self.login_error:
-            self.session.trail.append({**LOGIN_SEND, "status": None, "error": f"{type(self.login_error).__name__}: {self.login_error}"})
+            # as RecordingSession would record it: the error in words, token-shaped runs redacted
+            self.session.trail.append({**LOGIN_SEND, "status": None, "error": f"{type(self.login_error).__name__}: {scrub(self.login_error)}"})
             raise self.login_error
         self.session.trail.append(LOGIN_SEND)
 

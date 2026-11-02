@@ -2,6 +2,38 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.4] — 2026-11-02 — the 0.6.3 build failed: record order within a millisecond
+
+### Why
+The Cloud Build run of 0.6.3 (4944dd11) failed at the test step, 3 failed and
+64 passed, so nothing was built or deployed; the live server stayed at 0.6.1
+in the failed state. The two new tests passed. The three that failed:
+- `test_a_failed_login_latches_and_is_never_retried`: the test's fake client
+  wrote the raw error into the fake HTTP trail, token and all, where the real
+  `RecordingSession` redacts it. Test only; the fake now redacts as the real
+  one does.
+- `test_markets_asks_for_the_days_gb_and_ie_win_markets_and_records_it` and
+  `test_logout_gives_the_session_back`: the records came back in the wrong
+  order. Object names are `{prefix}{ms:013d}-{8 hex}.json`, and two objects
+  written in the same millisecond were ordered by the hex, which is no order
+  at all. The tests had passed by luck in the three builds before. This is not
+  a test problem: on the live server a settings version or a Betfair record
+  written in the same millisecond as the one before could sort before it, and
+  "newest wins" would pick the wrong one.
+
+### Fixed
+- `server/app/storage.py`: a clock-named object from this process always
+  takes a later millisecond than the one before it (a lock and the last
+  millisecond handed out). The service runs one instance, so the order of
+  names is the order of writes. An explicit `t_ms` is used as given.
+- `server/tests/test_storage.py`: with the clock frozen, three names in a row
+  take three successive milliseconds and a store lists them in the order
+  written. 68 pytest cases.
+
+### Not changed
+- Nothing else from 0.6.3. No login attempted; the live server's failed state
+  stands until this deploys and Charles clears it.
+
 ## [0.6.3] — 2026-11-02 — the first login's failure: cause, record, and the error's path
 
 ### Why

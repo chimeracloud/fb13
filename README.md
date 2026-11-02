@@ -37,7 +37,7 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
-| v1 5 | Tests from real data | Server tests written alongside each step: 67 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code. The resolver's matching is tested against the first real catalogue once it is stored |
+| v1 5 | Tests from real data | Server tests written alongside each step: 68 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver's matching is tested against the first real catalogue once it is stored |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -194,7 +194,9 @@ accepts only a token issued by that team for that application.
 ### The stored settings
 
 One JSON object per change in `gs://chiops-fb13-config/settings/v/`, named by
-its time, create-only; the newest is in force. Hydrated at start and re-read
+its time, create-only; the newest is in force. Names from one process never
+share a millisecond (0.6.4), so the order of names is the order of writes
+and "newest" means the last written. Hydrated at start and re-read
 every five seconds, so the stored value governs.
 
 ```json

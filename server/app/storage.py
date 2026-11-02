@@ -8,6 +8,13 @@ newest.
 
     {prefix}{ms:013d}-{8 hex}.json      13-digit milliseconds, so name order is time order
 
+Within one millisecond the hex would decide the order, which is no order at
+all: the 0.6.3 build of 2 November 2026 failed on two tests whose records
+fell in the same millisecond and came back reversed. So a clock-named object
+from this process always takes a later millisecond than the one before it;
+the service runs one instance, so the order of names is the order of writes.
+A caller's explicit t_ms is used as given (the tests).
+
 FB11 learned this on 21 September 2026, when settings written in place were
 refused with 403 for a whole racing day and nobody noticed. Create-only from
 the first commit, here, and enforced by IAM rather than by this code.
@@ -28,9 +35,17 @@ from typing import Any
 JSON = dict[str, Any]
 
 
+_name_lock = threading.Lock()
+_last_ms = 0
+
+
 def name_for(prefix: str, t_ms: int | None = None) -> str:
-    t_ms = int(time.time() * 1000) if t_ms is None else int(t_ms)
-    return f"{prefix}{t_ms:013d}-{uuid.uuid4().hex[:8]}.json"
+    global _last_ms
+    if t_ms is None:
+        with _name_lock:
+            t_ms = max(int(time.time() * 1000), _last_ms + 1)
+            _last_ms = t_ms
+    return f"{prefix}{int(t_ms):013d}-{uuid.uuid4().hex[:8]}.json"
 
 
 def dumps(data: JSON) -> bytes:

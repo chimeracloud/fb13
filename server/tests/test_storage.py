@@ -14,6 +14,22 @@ def test_names_order_by_time_and_end_in_json():
     assert earlier < later
 
 
+def test_clock_names_from_one_process_never_share_a_millisecond(monkeypatch):
+    """Two writes in one millisecond came back in random order and failed the 0.6.3 build of
+    2 November 2026. With the clock frozen, each clock-named object takes the next millisecond."""
+    monkeypatch.setattr(storage.time, "time", lambda: 1_800_000_000.000)
+    monkeypatch.setattr(storage, "_last_ms", 0)  # restored after the test
+    first = name_for("p/")
+    second = name_for("p/")
+    third = name_for("p/")
+    assert first < second < third
+    assert int(second[2:15]) == int(first[2:15]) + 1 and int(third[2:15]) == int(first[2:15]) + 2
+    assert name_for("p/", 5).startswith("p/0000000000005-")  # an explicit time is used as given
+    store = MemoryStore()
+    names = [store.put("r/", {"n": i}) for i in range(3)]
+    assert store.names("r/") == names and [store.get(n)["n"] for n in store.names("r/")] == [0, 1, 2]
+
+
 def test_memory_store_newest_wins():
     store = MemoryStore()
     a = store.put("p/", {"n": 1}, 10)
