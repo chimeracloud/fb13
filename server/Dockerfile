@@ -20,7 +20,8 @@ ENV FB13_COMMIT=${FB13_COMMIT}
 
 # Fail the build, not the deploy, on a syntax or import error. Not a test:
 # importing opens no connection (no bucket named, no Access configured).
-RUN python -m compileall -q app && python -c "import app.main"
+RUN python -m compileall -q app && python -c "import app.main" \
+    && python -c "import zoneinfo; zoneinfo.ZoneInfo('Europe/London')"
 
 RUN useradd --create-home --uid 10001 fb13
 USER fb13

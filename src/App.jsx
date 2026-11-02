@@ -5,6 +5,8 @@ import { loadState, saveState } from './storage.js';
 import { buildDiagnostics, diagnosticsText } from './diagnostics.js';
 import { BUILD, buildLabel } from './build.js';
 import { entriesToCsv, entriesToJson, exportFilename, downloadText } from './export.js';
+import { api, explain } from './api.js';
+import { linesForResolve, resolutionLabel, marketsSummary, sessionLabel } from './resolve.js';
 import {
   WHERE_OTHER,
   SIDES,
@@ -47,6 +49,8 @@ export default function App() {
   const [storageOk, setStorageOk] = useState(true);
   const [message, setMessage] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  // What the server resolved each line to, by line id. In memory only: asked for again next time.
+  const [resolutions, setResolutions] = useState({});
 
   useEffect(() => {
     setStorageOk(saveState(state));
@@ -132,7 +136,14 @@ export default function App() {
     entries: entriesFor(state.entries, l.id),
     onPlaced: (form) => recordPlaced(l, form),
     onNotPlaced: () => recordNotPlaced(l),
+    resolution: resolutions[l.id] || null,
   });
+
+  const takeResolutions = (list) =>
+    setResolutions((prev) => ({
+      ...prev,
+      ...Object.fromEntries((list || []).filter((r) => r && r.id).map((r) => [r.id, r])),
+    }));
 
   return (
     <div className="app">
@@ -180,6 +191,8 @@ export default function App() {
         <PasteBox onPaste={(clip) => addParsed(parseSlip(clip))} onDiagnostics={setDiagnostics} />
 
         <DiagnosticsPanel diagnostics={state.diagnostics} />
+
+        <ServerPanel date={date} lines={dayLines} onResolutions={takeResolutions} />
 
         {message && (
           <p className={`message ${message.kind}`} role="status">
@@ -247,6 +260,144 @@ export default function App() {
         <p className="tag">Born from complexity. Engineered for certainty.</p>
       </footer>
     </div>
+  );
+}
+
+/**
+ * Version 1, step 2. The page's window on its server: the status, the Betfair
+ * session (an operator logs in; nothing logs in by itself), the day's markets,
+ * and the resolution of the lines on this page to a market and a runner.
+ * Read only: nothing here places, cancels or changes a setting.
+ */
+function ServerPanel({ date, lines, onResolutions }) {
+  const [status, setStatus] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [note, setNote] = useState(null);
+  const [markets, setMarkets] = useState(null);
+  const [result, setResult] = useState(null);
+
+  async function run(label, fn) {
+    setBusy(label);
+    setNote(null);
+    try {
+      const r = await fn();
+      if (r && !r.ok) setNote({ kind: 'warn', text: explain(r) });
+      return r;
+    } catch (e) {
+      setNote({ kind: 'warn', text: `The page could not finish that: ${(e && e.message) || 'error'}` });
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function loadStatus() {
+    const r = await api('/admin/status');
+    if (r.ok) setStatus(r.data);
+    return r;
+  }
+
+  const refresh = () => run('status', loadStatus);
+
+  const control = (action) =>
+    run(action, async () => {
+      const r = await api(`/admin/control/${action}`, { method: 'POST', body: { reason: 'operator, from the page' } });
+      await loadStatus();
+      return r;
+    });
+
+  const readMarkets = () =>
+    run('markets', async () => {
+      const r = await api(`/betfair/markets?date=${encodeURIComponent(date)}`);
+      if (r.ok) setMarkets(r.data);
+      return r;
+    });
+
+  const resolve = () =>
+    run('resolve', async () => {
+      const body = { date, lines: linesForResolve(lines) };
+      if (!body.lines.length) {
+        return { ok: false, status: 409, detail: `No parsed lines on this page for ${date}. Paste the slip first.` };
+      }
+      const r = await api('/resolve', { method: 'POST', body });
+      if (r.ok && r.data) {
+        setResult(r.data);
+        onResolutions(r.data.resolutions || []);
+      }
+      return r;
+    });
+
+  const b = status ? status.betfair : null;
+  const session = b ? b.session : null;
+
+  return (
+    <section className="server" aria-label="Server">
+      <h2>
+        Server <span className="sub">version 1, step 2: read only. Nothing places.</span>
+      </h2>
+      <p className="status-line">
+        {status
+          ? `Mode ${status.mode}; placing ${status.placing_enabled ? 'enabled' : 'disabled'}; Betfair session ${sessionLabel(status)}; ` +
+            `signed in as ${status.signed_in_as}; server ${status.version}${status.commit ? ` (${status.commit})` : ''}.`
+          : "Not asked yet. Refresh to read the server's status."}
+      </p>
+      <div className="row">
+        <button type="button" onClick={refresh} disabled={!!busy}>
+          {busy === 'status' ? 'Reading…' : 'Refresh status'}
+        </button>
+        <button type="button" onClick={() => control('betfair-login')} disabled={!!busy || session === 'logged_in'}>
+          {busy === 'betfair-login' ? 'Logging in…' : 'Log in to Betfair'}
+        </button>
+        <button type="button" onClick={() => control('betfair-logout')} disabled={!!busy || session !== 'logged_in'}>
+          Log out
+        </button>
+        {(session === 'failed' || session === 'expired' || session === 'logged_out') && (
+          <button type="button" onClick={() => control('betfair-reset')} disabled={!!busy}>
+            Clear the session state
+          </button>
+        )}
+        <button type="button" onClick={readMarkets} disabled={!!busy}>
+          {busy === 'markets' ? 'Reading…' : `Read the markets for ${date}`}
+        </button>
+        <button type="button" className="primary" onClick={resolve} disabled={!!busy}>
+          {busy === 'resolve' ? 'Resolving…' : 'Resolve the lines on this page'}
+        </button>
+      </div>
+      {note && (
+        <p className={`message ${note.kind}`} role="status">
+          {note.text}
+        </p>
+      )}
+      {markets && (
+        <div className="result">
+          <p>
+            {marketsSummary(markets)}
+            {markets.from_cache ? " (from the server's cache)" : ''}
+          </p>
+          {markets.markets && markets.markets.length > 0 && (
+            <details>
+              <summary>Every market and its runners</summary>
+              <ol>
+                {markets.markets.map((m) => (
+                  <li key={m.market_id}>
+                    {m.start_london} {m.venue} · {m.market_name} · {m.market_id}:{' '}
+                    {(m.runners || []).map((r) => `${r.name} (${r.selection_id})`).join(', ')}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
+      )}
+      {result && (
+        <div className="result">
+          <p>
+            Resolved {result.resolved} of {result.resolved + result.flagged} lines for {result.date} against the
+            catalogue read at {result.catalogue_fetched_at}. Each line below shows its market and runner, or why not.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -442,7 +593,7 @@ function PasteGroup({ paste, lines, lineProps, canRemove, onRemove }) {
 
 const STATUS_LABEL = { placed: 'Placed', not_placed: 'Not placed', waiting: 'Waiting' };
 
-function LineCard({ line, entries, onPlaced, onNotPlaced }) {
+function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
   const [formOpen, setFormOpen] = useState(false);
   const c = line.cells || {};
   const d = line.derived || {};
@@ -460,7 +611,13 @@ function LineCard({ line, entries, onPlaced, onNotPlaced }) {
         {latest && latest.kind === 'placed' && (
           <span className={`chip mode ${latest.placed.mode}`}>{latest.placed.mode.toUpperCase()}</span>
         )}
+        {resolution && (
+          <span className={`chip ${resolution.status === 'resolved' ? 'resolved' : 'unresolved'}`}>
+            {resolution.status === 'resolved' ? 'Betfair: resolved' : 'Betfair: not resolved'}
+          </span>
+        )}
       </div>
+      {resolution && <p className="resolution">{resolutionLabel(resolution)}</p>}
 
       {line.parsed ? (
         <>

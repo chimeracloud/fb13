@@ -31,13 +31,13 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 94 tests (8 of them for the Pages Function), run by every Pages build before `vite build` |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 104 tests (8 for the Pages Function, 9 for the page's calls to its server), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
 | v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
-| v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Not started. The first login waits for Charles's word |
+| v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. Charles gave the word for the first login on 2 November; his click on the page is that login. The real 08:00 slip at 08:00 UK is the resolver's test |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
-| v1 5 | Tests from real data | Server tests written alongside step 1: 47 cases, run by every Cloud Build before the image is built |
+| v1 5 | Tests from real data | Server tests written alongside each step: 65 cases, run by every Cloud Build before the image is built. The resolver's matching is tested against the first real catalogue once it is stored |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -113,8 +113,8 @@ Current state in detail: [docs/status/latest.md](docs/status/latest.md).
   comma, and only to offer them in the "where" field. Charles holds the
   mapping.
 - It sends nothing anywhere: no analytics, no third party script, no CDN, no
-  fonts fetched. The only requests are for its own files. From step 4 the page
-  will call `/api/*` on its own hostname, and nothing else.
+  fonts fetched. Since version 1 step 2 the page also calls `/api/*` on its own
+  hostname, for the server panel, and nothing else.
 - It never edits or deletes a history entry.
 - It does not parse the text below the table (the lay rules). That is kept as
   a note.
@@ -233,9 +233,59 @@ within five seconds. Nothing is deleted or overwritten. The first version was
 written this way on 2 November 2026: paper, placing disabled, page access not
 confirmed, the default caps, and the two operators Charles named.
 
+### Step 2: read only
+
+Charles's rules of 2 November 2026, as built:
+
+- **The Delayed key only.** The Live key is not named anywhere in this
+  repository. Betfair's documentation says the Delayed key places bets on the
+  live exchange and is the key to test with; FB13 reads with it in step 2 and,
+  by Charles's ruling 3, will place with it from step 3.
+- **One login, with the certificate, kept with keepAlive.** An operator asks
+  from the server panel on the page (`betfair-login`); nothing logs in by
+  itself, not at start, not on a request. The certificate and key are written
+  to a private directory on the container's in-memory filesystem for the login
+  call only and removed as soon as it returns. While logged in, a keepAlive is
+  sent every fifteen minutes. **A failed login latches**: the state becomes
+  "failed" with the error in words, and no further login is attempted until an
+  operator clears it (`betfair-reset`) and asks again. Never a retry loop. A
+  failed keepAlive marks the session "expired", with the same rule.
+- **Every request and response is recorded**, append-only, in the orders
+  bucket under `betfair/<UTC date>/`, with the time and the operator: login,
+  keepAlive, logout, listMarketCatalogue (the full catalogue as Betfair sent
+  it). Never a secret: the session token, key, username and password are not
+  written anywhere, and any token-shaped run of characters in an error is
+  redacted before it is stored or logged.
+- **Read only.** The only market call is listMarketCatalogue for one London
+  day's horse racing (event type 7), countries GB and IE, market type WIN, sorted
+  first to start, with EVENT, MARKET_START_TIME and RUNNER_DESCRIPTION. No order
+  call exists in the code.
+- **The resolver** (`server/app/resolver.py`, pure functions): a slip line's
+  race cell "13:40 Cork" is a UK local time and a course; the time becomes the
+  UTC instant Betfair shows, the course is matched to the market's venue, and
+  the horse to a runner name, exactly, after normalising case and spacing
+  only. One market at that time and venue, one runner with that name: resolved
+  to a market id and a selection id. Anything else is flagged with the reason
+  and the candidates, never guessed: no market at that time, a different venue
+  at that time (named), two markets, a runner not in the market (the runners
+  named), a runner twice. What was asked and answered is stored under
+  `resolutions/<date>/`.
+- **The page's server panel** (above the lines): refresh the status; log in,
+  log out, clear the session state; read the day's markets (count, first and
+  last off, venues, every market with its runners and ids); resolve the
+  parsed lines on the page for the selected date. Each line then shows a chip,
+  "Betfair: resolved" with the market id, runner and selection id, or
+  "Betfair: not resolved" with the reason. The resolution is held in memory
+  only and asked for again next time.
+- **The session and the instance.** With minimum instances at zero, the
+  session dies with the instance when Cloud Run scales it away after idleness,
+  and the next instance starts logged out: an operator logs in again, by hand.
+  Charles revisits the minimum at step 2.
+
 ### Endpoints
 
-Thirteen, per CHI-POL-008 with its 18 September 2026 amendment.
+Thirteen of the shell, per CHI-POL-008 with its 18 September 2026 amendment,
+plus step 2's three actions and two content endpoints.
 
 | Endpoint | What | Token |
 | --- | --- | --- |
@@ -252,13 +302,18 @@ Thirteen, per CHI-POL-008 with its 18 September 2026 amendment.
 | `GET /admin/events` | the same, live, server-sent events, five minutes a request | operator |
 | `GET /admin/incidents` | `[]` until the Incident FSU exists (CHI-POL-043) | operator |
 | `POST /admin/control/{kill,resume}` | the kill switch and its inverse; `{"reason": "..."}` optional; any other action 404 | operator |
+| `POST /admin/control/betfair-login` | log in once, with the certificate, on the Delayed key; 502 with the error if it fails, 409 thereafter until reset | operator |
+| `POST /admin/control/betfair-logout` | give the session back | operator |
+| `POST /admin/control/betfair-reset` | clear a failed, expired or logged-out state; logs nothing in | operator |
+| `GET /betfair/markets?date=YYYY-MM-DD` | the day's GB and IE win markets with runners and a summary; London today by default; 409 when not logged in | operator |
+| `POST /resolve` | `{"date": "...", "lines": [{"id", "race", "horse"}]}`: each line to a market and runner, or a flag | operator |
 
 ### Storage
 
 | Bucket | Holds | Created |
 | --- | --- | --- |
 | `gs://chiops-fb13-config` | `settings/v/` versions; `activity/<date>/` events | 2 November 2026 |
-| `gs://chiops-fb13-orders` | from step 3: order events, resolutions, every Betfair request and response | 2 November 2026 |
+| `gs://chiops-fb13-orders` | from step 2: `betfair/<UTC date>/` every request to Betfair and every response, `resolutions/<date>/` what the resolver was asked and answered; from step 3: order events | 2 November 2026 |
 
 Both: London, uniform access, public access prevented, object versioning on.
 `fb13-sa` holds `roles/storage.objectCreator` and `roles/storage.objectViewer`
@@ -440,6 +495,12 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
 - **The operator list holds two addresses**, from the first settings version
   written by hand at Charles's word on 2 November 2026. Others are added by a
   new version, never by editing.
+- **The resolver's matching is untested against real markets** until the
+  first real catalogue is stored and kept as a fixture; the parsing, the
+  clock and the flags are tested. Course names on the slip and Betfair's
+  venue names are expected to agree for GB and IE courses; where they do not,
+  the line is flagged with the venues Betfair has at that time, and Charles
+  decides any mapping.
 - **Minimum instances zero until step 2** (Charles, 2 November 2026): the
   first call after idleness waits for a cold start of a few seconds, and from
   step 2 each cold start would mean a fresh Betfair login, which is why the
@@ -472,7 +533,11 @@ reference/            read-only clones (the Bible, FB11), never committed
 
 functions/api/[[path]].js   the Pages Function: /api/* to the server, with the Access token
 src/pages-function.test.js  its tests (vitest, Node environment)
-server/app/main.py          the FastAPI app: the thirteen endpoints, the gate, the middleware
+src/api.js                  the page's calls to /api/*, every answer in words, never a throw
+src/resolve.js              what the page sends to resolve and how an answer reads
+server/app/main.py          the FastAPI app: the endpoints, the gate, the middleware
+server/app/betfair.py       the Betfair session: one login, keepAlive, listMarketCatalogue, every call recorded
+server/app/resolver.py      a slip line to a market and a runner, pure functions, flags never guesses
 server/app/settings.py      the stored settings: mode, caps, kill switch, operators; create-only versions
 server/app/access.py        Cloudflare Access token verification and the operator check
 server/app/activity.py      the append-only activity log and the server-sent events

@@ -646,3 +646,61 @@ pre.diag {
 .export .message {
   margin: 10px 0 0;
 }
+
+/* ---- version 1, step 2: the server panel and resolutions ---- */
+
+.server {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.server h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.server .status-line {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.server .row button {
+  flex: 1 1 140px;
+}
+
+.server .result {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--cream);
+}
+
+.server ol {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.chip.resolved {
+  background: #10281a;
+  color: #8fd19e;
+}
+
+.chip.unresolved {
+  background: #2a1210;
+  color: #f0a09c;
+}
+
+.resolution {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

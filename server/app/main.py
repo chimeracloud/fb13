@@ -22,7 +22,15 @@ reaches this service only through its own hostname (functions/api/[[path]].js).
   POST /admin/control/kill      stop all placing, paper and real, at once
   POST /admin/control/resume    allow placing again
 
-Cancelling open orders is a separate, deliberate call and arrives in step 3.
+Step 2 (read only, 2 November 2026). Nothing logs in by itself: an operator asks.
+  POST /admin/control/betfair-login    log in once, with the certificate, on the Delayed key
+  POST /admin/control/betfair-logout   give the session back
+  POST /admin/control/betfair-reset    clear a failed or expired session so another login may be asked for
+  GET  /betfair/markets?date=          the day's GB and IE win markets with runners (listMarketCatalogue)
+  POST /resolve                        {"date": "...", "lines": [{"id", "race", "horse"}]} -> market and runner, or a flag
+
+No order call exists in this version. Cancelling open orders is a separate,
+deliberate call and arrives in step 3.
 """
 
 from __future__ import annotations
@@ -36,18 +44,21 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from app import logconfig
 from app.access import HEADER, AccessVerifier, Refused, operator_email
 from app.activity import Activity
+from app.betfair import LONDON, BetfairRefused, BetfairSession, summarise
 from app.credentials import credential_names, reads_so_far
 from app.metrics import Metrics
-from app.models import ConfigUpdate, ControlBody
+from app.models import ConfigUpdate, ControlBody, ResolveRequest
+from app.resolver import resolve_lines
 from app.settings import Settings, SettingsError
 from app.storage import Store, open_store
 from app.version import COMMIT, SERVICE_NAME, UNIT, VERSION, build_label
@@ -74,19 +85,35 @@ class Services:
     activity: Activity
     verifier: AccessVerifier
     metrics: Metrics
+    betfair: BetfairSession
 
 
 def build_services() -> Services:
     store = open_store(os.environ.get("FB13_CONFIG_BUCKET", "").strip() or None)
     orders_store = open_store(os.environ.get("FB13_ORDERS_BUCKET", "").strip() or None)
+    activity = Activity(store)
     return Services(
         store=store,
         orders_store=orders_store,
         settings=Settings(store),
-        activity=Activity(store),
+        activity=activity,
         verifier=AccessVerifier(os.environ.get("CF_ACCESS_TEAM_DOMAIN", ""), os.environ.get("CF_ACCESS_AUD", "")),
         metrics=Metrics(),
+        betfair=BetfairSession(orders_store, activity),
     )
+
+
+def london_today() -> date:
+    return datetime.now(LONDON).date()
+
+
+def parse_day(text: str | None) -> date:
+    if not text:
+        return london_today()
+    try:
+        return date.fromisoformat(text)
+    except ValueError as exc:
+        raise HTTPException(422, "date must be YYYY-MM-DD") from exc
 
 
 svc = build_services()
@@ -127,6 +154,11 @@ async def lifespan(_: FastAPI):
         earlier_events_reloaded=loaded,
     )
     yield
+    keepalive = getattr(app.state, "keepalive", None)
+    if keepalive is not None:
+        keepalive.cancel()
+    if svc.betfair.logged_in:
+        await asyncio.to_thread(svc.betfair.logout, "instance_stop")  # the session dies with the instance; say so to Betfair
     await asyncio.to_thread(svc.activity.record, "instance_stop", None)
 
 
@@ -204,6 +236,7 @@ def ready() -> JSONResponse:
         "settings_loaded_at": s.loaded_at,
         "settings_error": s.error,
         "access_configured": svc.verifier.configured,
+        "betfair_session": svc.betfair.state,
     }
     return JSONResponse(body, status_code=200 if is_ready else 503)
 
@@ -222,7 +255,10 @@ def info(email: str = Depends(require_operator)) -> dict[str, Any]:
         "dependencies": pinned_dependencies(),
         "credentials": {"names": credential_names(), "reads_this_process": reads_so_far()},
         "access": {"configured": svc.verifier.configured, "issuer": svc.verifier.issuer or None, "certs": svc.verifier.certs_url or None},
-        "betfair": {"calls_made": 0, "note": "no Betfair call is made in this version (step 1)"},
+        "betfair": {
+            **svc.betfair.view(),
+            "note": "step 2: read only. login, keepAlive, logout and listMarketCatalogue on the Delayed key; no order call exists",
+        },
         "interim": INTERIM,
     }
 
@@ -249,6 +285,7 @@ def metrics(email: str = Depends(require_operator)) -> PlainTextResponse:
 def status_text(email: str = Depends(require_operator)) -> PlainTextResponse:
     s = svc.settings
     v = s.values
+    b = svc.betfair.view()
     totals = svc.metrics.totals()
     lines = [
         f"{UNIT} trade slip API, {build_label()}",
@@ -261,7 +298,11 @@ def status_text(email: str = Depends(require_operator)) -> PlainTextResponse:
         f"settings: {s.versions} version(s) stored" + (f", error: {s.error}" if s.error else "") + (f", problems: {'; '.join(s.problems)}" if s.problems else ""),
         f"activity: {svc.activity.recorded} event(s) this instance, {svc.activity.store_errors} not stored",
         f"requests: {totals['requests']} answered, {totals['auth_refusals']} refused at the gate, {totals['server_errors']} server errors",
-        "betfair: no call made in this version (step 1)",
+        f"betfair: session {b['session']}, delayed key, {b['calls']} catalogue call(s), {b['login_attempts']} login attempt(s)"
+        + (f", logged in at {b['logged_in_at']}" if b["logged_in_at"] else "")
+        + (f", last keepAlive {b['last_keepalive_at']}" if b["last_keepalive_at"] else "")
+        + (f", error: {b['error']}" if b["error"] else "")
+        + "; read only, no order call exists",
         f"uptime: {totals['uptime_s']} s",
     ]
     return PlainTextResponse("\n".join(lines) + "\n")
@@ -293,7 +334,7 @@ def admin_status(email: str = Depends(require_operator)) -> dict[str, Any]:
         "settings_in_force_from": s.source,
         "settings_error": s.error,
         "settings_problems": list(s.problems),
-        "betfair": {"calls_made": 0, "note": "no Betfair call is made in this version (step 1)"},
+        "betfair": svc.betfair.view(),
     }
 
 
@@ -366,24 +407,83 @@ def incidents(email: str = Depends(require_operator)) -> list[dict[str, Any]]:
     return []
 
 
+ACTIONS = ("kill", "resume", "betfair-login", "betfair-logout", "betfair-reset")
+
+
 @app.post("/admin/control/{action}")
-def control(action: str, body: ControlBody | None = None, email: str = Depends(require_operator)) -> dict[str, Any]:
+async def control(action: str, body: ControlBody | None = None, email: str = Depends(require_operator)) -> dict[str, Any]:
     reason = body.reason if body else None
-    if action not in ("kill", "resume"):
-        raise HTTPException(404, "actions of this unit: kill (stop all placing at once), resume")
+    if action not in ACTIONS:
+        raise HTTPException(404, f"actions of this unit: {', '.join(ACTIONS)}")
+    if action in ("kill", "resume"):
+        try:
+            view = await asyncio.to_thread(svc.settings.set_placing, action == "resume", email, reason)
+        except Exception as exc:  # noqa: BLE001 - the store refused: the stored value, whatever it is, still governs
+            log.exception("%s not stored", action)
+            raise HTTPException(503, f"{action} could not be stored: {type(exc).__name__}") from exc
+        await asyncio.to_thread(svc.activity.record, action, email, reason=reason, version=view["in_force_from"])
+        return {
+            "action": action,
+            "placing_enabled": view["values"]["placing_enabled"],
+            "in_force_from": view["in_force_from"],
+            "by": email,
+            "at": view["updated_at"],
+        }
     try:
-        view = svc.settings.set_placing(action == "resume", by=email, reason=reason)
-    except Exception as exc:  # noqa: BLE001 - the store refused: the stored value, whatever it is, still governs
-        log.exception("%s not stored", action)
-        raise HTTPException(503, f"{action} could not be stored: {type(exc).__name__}") from exc
-    svc.activity.record(action, email, reason=reason, version=view["in_force_from"])
-    return {
-        "action": action,
-        "placing_enabled": view["values"]["placing_enabled"],
-        "in_force_from": view["in_force_from"],
+        if action == "betfair-login":
+            was_logged_in = svc.betfair.logged_in
+            view = await asyncio.to_thread(svc.betfair.login, email)
+            if not was_logged_in and svc.betfair.logged_in:
+                app.state.keepalive = asyncio.create_task(svc.betfair.keepalive_loop(), name="betfair-keepalive")
+        elif action == "betfair-logout":
+            view = await asyncio.to_thread(svc.betfair.logout, email)
+        else:
+            view = await asyncio.to_thread(svc.betfair.reset, email)
+    except BetfairRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+    return {"action": action, "by": email, "reason": reason, "betfair": view}
+
+
+# ---- set 3: content (step 2, read only) ----------------------------------------
+
+
+@app.get("/betfair/markets")
+def betfair_markets(
+    day_text: str | None = Query(default=None, alias="date", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    email: str = Depends(require_operator),
+) -> dict[str, Any]:
+    day = parse_day(day_text)
+    try:
+        found = svc.betfair.markets(day, by=email)
+    except BetfairRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+    return {**found, "summary": summarise(found["markets"])}
+
+
+@app.post("/resolve")
+def resolve(body: ResolveRequest, email: str = Depends(require_operator)) -> dict[str, Any]:
+    day = parse_day(body.date)
+    try:
+        found = svc.betfair.markets(day, by=email)
+    except BetfairRefused as exc:
+        raise HTTPException(exc.status, exc.detail) from exc
+    lines = [line.model_dump() for line in body.lines]
+    resolutions = resolve_lines(day, lines, found["markets"])
+    resolved = sum(1 for r in resolutions if r["status"] == "resolved")
+    record = {
+        "at": datetime.now(LONDON).isoformat(timespec="milliseconds"),
         "by": email,
-        "at": view["updated_at"],
+        "date": day.isoformat(),
+        "catalogue_fetched_at": found["fetched_at"],
+        "lines": lines,
+        "resolutions": resolutions,
     }
+    try:
+        svc.orders_store.put(f"resolutions/{day.isoformat()}/", record)
+    except Exception as exc:  # noqa: BLE001
+        log.error("resolution not stored: %s", type(exc).__name__, extra={"event": "resolution_store_error"})
+    svc.activity.record("resolve", email, date=day.isoformat(), lines=len(lines), resolved=resolved, flagged=len(lines) - resolved)
+    return {"date": day.isoformat(), "catalogue_fetched_at": found["fetched_at"], "from_cache": found["from_cache"], "resolved": resolved, "flagged": len(lines) - resolved, "resolutions": resolutions}
 
 
 KNOWN_PATHS = frozenset(getattr(r, "path", "") for r in app.routes)

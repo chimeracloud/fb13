@@ -26,3 +26,14 @@ class ConfigUpdate(Strict):
 
 class ControlBody(Strict):
     reason: str | None = Field(default=None, max_length=300)
+
+
+class ResolveLine(Strict):
+    id: str | None = Field(default=None, max_length=80)
+    race: str = Field(max_length=120)
+    horse: str = Field(max_length=120)
+
+
+class ResolveRequest(Strict):
+    date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    lines: list[ResolveLine] = Field(max_length=200)

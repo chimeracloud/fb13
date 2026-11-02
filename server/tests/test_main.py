@@ -81,7 +81,7 @@ def test_admin_status_for_an_operator(client, operator):
     assert body["mode"] == "paper" and body["placing_enabled"] is False and body["real_allowed"] is False
     assert body["caps"] == {"per_order_at_risk_gbp": 5.0, "per_day_at_risk_gbp": 10.0}
     assert body["signed_in_as"] == OPERATOR and body["operators"] == 1
-    assert body["betfair"]["calls_made"] == 0
+    assert body["betfair"]["session"] == "none" and body["betfair"]["key"] == "delayed"
 
 
 def test_config_put_changes_caps_refuses_mode(client, operator):
@@ -132,12 +132,12 @@ def test_stats_info_metrics_status(client, operator):
     assert info["dependencies"]["fastapi"] == "0.150.0" and info["dependencies"]["betfairlightweight"] == "2.24.0"
     assert info["credentials"]["names"]["betfair_app_key"] == "betfair-app-key-delayed"
     assert "value" not in json.dumps(info["credentials"]).lower()
-    assert info["betfair"]["calls_made"] == 0
+    assert info["betfair"]["session"] == "none" and info["betfair"]["calls"] == 0
     metrics = client.get("/metrics", headers=operator)
     assert metrics.status_code == 200 and "fb13_requests_total" in metrics.text and "fb13_placing_enabled" in metrics.text
     status = client.get("/status", headers=operator).text
     assert status.startswith("FB13 trade slip API, version ")
-    assert "mode: paper" in status and "DISABLED" in status and "no call made" in status
+    assert "mode: paper" in status and "DISABLED" in status and "no order call exists" in status
 
 
 def test_events_stream_connects_and_ends(client, operator, monkeypatch):
@@ -155,3 +155,98 @@ def test_activity_shows_the_instance_start(client, operator):
     assert any(e["event"] == "instance_start" for e in events)
     start = [e for e in events if e["event"] == "instance_start"][0]
     assert start["detail"]["storage"] == "memory"
+
+
+# ---- step 2: the Betfair session and the resolver, through the API ----------------
+
+
+class _FakeBetting:
+    def __init__(self):
+        self.calls = []
+
+    def list_market_catalogue(self, **kwargs):
+        self.calls.append(kwargs)
+        return []
+
+
+class _FakeClient:
+    def __init__(self, fail=False):
+        self.fail, self.logins, self.logouts, self.betting = fail, 0, 0, _FakeBetting()
+
+    def login(self):
+        self.logins += 1
+        if self.fail:
+            raise RuntimeError("cert login refused")
+
+    def keep_alive(self):
+        pass
+
+    def logout(self):
+        self.logouts += 1
+
+
+def _wire_betfair(fail=False):
+    from app.betfair import BetfairSession
+
+    client = _FakeClient(fail=fail)
+    creds = {"betfair_username": "u", "betfair_password": "p", "betfair_app_key": "k", "betfair_cert_pem": "c", "betfair_key_pem": "k"}
+    main.svc.betfair = BetfairSession(main.svc.orders_store, main.svc.activity, client_factory=lambda *a, **k: client, credential=creds.__getitem__)
+    return client
+
+
+def test_betfair_actions_need_an_operator_and_nothing_logs_in_by_itself(client):
+    r = client.get("/betfair/markets")
+    assert r.status_code == 401
+    assert client.post("/resolve", json={"lines": []}).status_code == 401
+    assert client.get("/ready").json()["betfair_session"] == "none"
+
+
+def test_markets_refused_until_an_operator_logs_in(client, operator):
+    fake = _wire_betfair()
+    r = client.get("/betfair/markets", headers=operator)
+    assert r.status_code == 409 and "not logged in" in r.json()["detail"]
+    assert fake.logins == 0
+    r = client.post("/resolve", headers=operator, json={"date": "2026-11-02", "lines": [{"id": "a", "race": "13:40 Cork", "horse": "West Away"}]})
+    assert r.status_code == 409
+
+
+def test_login_then_markets_then_resolve(client, operator):
+    fake = _wire_betfair()
+    r = client.post("/admin/control/betfair-login", headers=operator, json={"reason": "first login, Charles's word"})
+    assert r.status_code == 200
+    assert r.json()["betfair"]["session"] == "logged_in" and r.json()["by"] == OPERATOR
+    assert fake.logins == 1
+    assert client.get("/ready").json()["betfair_session"] == "logged_in"
+    assert client.get("/admin/status", headers=operator).json()["betfair"]["session"] == "logged_in"
+    r = client.get("/betfair/markets?date=2026-11-02", headers=operator)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"] == {"count": 0, "first_off": None, "last_off": None, "venues": [], "runners": 0}
+    assert body["from_cache"] is False and fake.betting.calls[0]["max_results"] == 200
+    assert client.get("/betfair/markets?date=2026-13-45", headers=operator).status_code == 422
+    r = client.post("/resolve", headers=operator, json={"date": "2026-11-02", "lines": [{"id": "a", "race": "13:40 Cork", "horse": "West Away"}]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["resolved"] == 0 and body["flagged"] == 1 and body["from_cache"] is True
+    assert body["resolutions"][0]["id"] == "a" and body["resolutions"][0]["status"] == "flagged"
+    assert client.post("/resolve", headers=operator, json={"date": "2026-11-02", "lines": [{"race": "x", "horse": "y", "extra": 1}]}).status_code == 422
+    stored = main.svc.orders_store.names("resolutions/2026-11-02/")
+    assert len(stored) == 1 and main.svc.orders_store.get(stored[0])["by"] == OPERATOR
+    status = client.get("/status", headers=operator).text
+    assert "betfair: session logged_in, delayed key, 1 catalogue call(s), 1 login attempt(s)" in status
+    r = client.post("/admin/control/betfair-logout", headers=operator)
+    assert r.status_code == 200 and r.json()["betfair"]["session"] == "logged_out" and fake.logouts == 1
+    events = [e["event"] for e in client.get("/admin/activity", headers=operator).json()]
+    assert events[:4] == ["betfair_logout", "resolve", "betfair_catalogue", "betfair_login"]
+
+
+def test_a_failed_login_is_502_once_then_409_until_reset(client, operator):
+    fake = _wire_betfair(fail=True)
+    r = client.post("/admin/control/betfair-login", headers=operator)
+    assert r.status_code == 502 and "Not retried" in r.json()["detail"]
+    r = client.post("/admin/control/betfair-login", headers=operator)
+    assert r.status_code == 409 and fake.logins == 1
+    r = client.post("/admin/control/betfair-reset", headers=operator)
+    assert r.status_code == 200 and r.json()["betfair"]["session"] == "none"
+    assert client.post("/admin/control/start", headers=operator).status_code == 404
+    assert "betfair-login" in client.post("/admin/control/start", headers=operator).json()["detail"]

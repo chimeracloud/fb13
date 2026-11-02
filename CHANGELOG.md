@@ -2,6 +2,60 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.0] — 2026-11-02 — version 1, step 2: read only
+
+### Why
+Charles's word of 2 November 2026 for the first Betfair login, before racing,
+with his rules: the Delayed key only; log in once with the certificate, keep
+the session with keepAlive, never loop on a failure; read only,
+listMarketCatalogue for today's GB and IE win markets; no order call; then the
+resolver, tested at 08:00 UK on the real 08:00 slip.
+
+### Added
+- `server/app/betfair.py`: the session. Login once with the certificate on the
+  Delayed key, at an operator's ask; keepAlive every fifteen minutes while
+  logged in; a failed login latches as "failed" with the error in words and is
+  never retried until an operator resets it; a failed keepAlive latches as
+  "expired". listMarketCatalogue for one London day: event type 7, GB and IE,
+  WIN, first to start, EVENT, MARKET_START_TIME, RUNNER_DESCRIPTION, at most
+  200 markets, cached ten minutes. Every request and response recorded
+  append-only under `betfair/<UTC date>/` in the orders bucket, never a
+  secret, token-shaped runs redacted from errors. The certificate and key live
+  in a private in-memory directory for the login call only.
+- `server/app/resolver.py`: a slip line to a market and a runner, pure. Time
+  and course from "13:40 Cork"; UK clock to UTC; venue and runner matched
+  exactly after case and spacing; one market and one runner or a flag with the
+  reason and the candidates. Resolutions stored under `resolutions/<date>/`.
+- Endpoints: `betfair-login`, `betfair-logout`, `betfair-reset` as control
+  actions; `GET /betfair/markets?date=`; `POST /resolve`. `/ready` carries the
+  session state; `/admin/status`, `/info` and `/status` carry the session view.
+  At instance stop a live session is logged out.
+- The page: a server panel above the lines (status, log in, log out, clear,
+  read the markets, resolve the lines on this page) and a chip on each line
+  with its market and runner or the reason it did not resolve. `src/api.js`
+  and `src/resolve.js`, pure.
+- Tests: 18 more pytest cases (the session's one-login rule, the latch, the
+  redaction, the certificate files removed, the catalogue request's filter and
+  record, keepAlive expiry, logout; the resolver's parsing, clock and flags on
+  real slip cells; the API end to end with a test double for the client) and 9
+  more vitest cases. 65 pytest cases and 104 vitest cases in all. The
+  resolver's matching against real markets is tested once the first real
+  catalogue is stored and kept as a fixture: no invented markets.
+- `server/Dockerfile`: the build proves `Europe/London` is known to the image.
+
+### How the first login happens
+The server's endpoints answer only to an operator through the page, and
+Betfair blocks this machine, so the build agent cannot log in from here. The
+operator's click on "Log in to Betfair" is the login; the catalogue read and
+the resolutions are stored in the orders bucket, where the build agent reads
+them back to report. Nothing logs in by itself.
+
+### Not changed, for Charles
+- Minimum instances stay at zero. The session dies with the instance when
+  Cloud Run scales it away, and the next instance starts logged out. One
+  standing session needs minimum one and CPU always allocated, which costs an
+  always-on instance; Charles's call at step 2, as he said.
+
 ## [0.5.3] — 2026-11-02 — the trigger, the first deploy, and a correction
 
 ### Correction
