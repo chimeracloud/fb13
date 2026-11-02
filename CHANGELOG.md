@@ -2,6 +2,40 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.8.0] — 2026-11-02 — step 4 on the page: the Place button, the confirm panel, the order status
+
+### Added
+- The Place button on each seven-cell line, enabled once the back leg is
+  recorded Placed and the server's status has been read; it asks the server
+  to build the lay (`POST /orders/build`) and opens the confirm panel: mode,
+  market, runner, side, the back taken, the lay price with the percentage
+  under and the rung, the slip's lay target beside it with how many ticks
+  away, size, liability, the caps and the day so far, the Betfair cap as
+  shown only, the references, the ticket, every note and every refusal.
+  Confirm sends the ticket (`POST /orders/place`); the result and the line's
+  order status come from the server's ledger (`GET /orders?date=`), read with
+  Refresh status and after every Place. Confirm is disabled unless the server
+  names the lay rule in force; against a server that does not (0.7.3), the
+  panel says so and nothing can be confirmed. Charles's design, approved
+  2 November 2026 with his changes.
+- Six-cell lines carry no Place button and say "No order from this line: the
+  six-cell email is the 06:30 selection, in or out, and nothing more".
+- "Place all: not built yet", a disabled button in the Server panel, until one
+  paper Place and one real Place have been done by Charles on real lines.
+- `src/orders.js`: `backLegOf`, `placeBlocker`, `buildBody`, `placeBody`,
+  `confirmBlocker`, `confirmRows`, `slipTargetLabel`, `ordersForLine`,
+  `orderStatusLabel`, with tests.
+
+### Changed
+- README: Charles's rulings of the evening of 2 November 2026 recorded: the
+  six-cell email's meaning and its evidence; the lay rule of the footnote and
+  the stage built; the full ladder as the next stage with the sizing question
+  and a proposal; the at-the-off rules as later work; the Betfair cap as a
+  limit on the back, the earlier assumption withdrawn; the trial stake of
+  £2.00 at slip prices of 2.5 to 4.0; "race already run"; the pages.dev
+  addresses left as they are; the Gibraltar regulator label as a fact. The
+  test order's real run and acceptance.
+
 ## [0.7.3] — 2026-11-02 — the server suite run in the cloud before any push: one bug, two stale tests
 
 ### Fixed

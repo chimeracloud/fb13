@@ -725,3 +725,93 @@ pre.diag {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* Step 4: the Place button, the confirm panel, the order status (2 November 2026). */
+.actions button.place {
+  border-color: var(--accent, #7aa2f7);
+}
+
+.line .why {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.line .order-status {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-left: 3px solid var(--accent, #7aa2f7);
+  background: var(--panel-2);
+  font-size: 13px;
+}
+
+.confirm {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.confirm.real {
+  border-color: #c0392b;
+}
+
+.confirm h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.confirm.real h3 {
+  color: #f0a09c;
+}
+
+.confirm-rows {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+
+.confirm-rows div {
+  display: contents;
+}
+
+.confirm-rows dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.confirm-rows dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.confirm .notes,
+.confirm .refusals {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.confirm .refusals {
+  color: #f0a09c;
+}
+
+.confirm .reason {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.confirm .reason input {
+  max-width: 480px;
+}
+
+.confirm button.primary.real {
+  background: #c0392b;
+  border-color: #c0392b;
+}

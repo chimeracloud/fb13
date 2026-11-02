@@ -7,7 +7,21 @@ import { BUILD, buildLabel } from './build.js';
 import { entriesToCsv, entriesToJson, exportFilename, downloadText } from './export.js';
 import { api, explain } from './api.js';
 import { linesForResolve, resolutionLabel, marketsSummary, sessionLabel } from './resolve.js';
-import { TEST_CONFIRMATION, runnersOf, testOrderBody, testOrderSummary } from './orders.js';
+import {
+  TEST_CONFIRMATION,
+  runnersOf,
+  testOrderBody,
+  testOrderSummary,
+  SIX_CELL_NO_ORDER,
+  backLegOf,
+  placeBlocker,
+  buildBody,
+  placeBody,
+  confirmBlocker,
+  confirmRows,
+  ordersForLine,
+  orderStatusLabel,
+} from './orders.js';
 import {
   WHERE_OTHER,
   SIDES,
@@ -52,6 +66,19 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   // What the server resolved each line to, by line id. In memory only: asked for again next time.
   const [resolutions, setResolutions] = useState({});
+  // The server's status (mode, placing, session, version) as last read, and the day's order ledger. In memory only.
+  const [server, setServer] = useState(null);
+  const [ledger, setLedger] = useState(null);
+
+  useEffect(() => {
+    setLedger(null);
+  }, [date]);
+
+  async function loadLedger() {
+    const r = await api(`/orders?date=${encodeURIComponent(date)}`);
+    if (r.ok) setLedger(r.data);
+    return r;
+  }
 
   useEffect(() => {
     setStorageOk(saveState(state));
@@ -138,6 +165,10 @@ export default function App() {
     onPlaced: (form) => recordPlaced(l, form),
     onNotPlaced: () => recordNotPlaced(l),
     resolution: resolutions[l.id] || null,
+    server,
+    orders: ordersForLine(ledger, l.id),
+    date,
+    onLedger: loadLedger,
   });
 
   const takeResolutions = (list) =>
@@ -189,7 +220,7 @@ export default function App() {
 
         <DiagnosticsPanel diagnostics={state.diagnostics} />
 
-        <ServerPanel date={date} lines={dayLines} onResolutions={takeResolutions} />
+        <ServerPanel date={date} lines={dayLines} onResolutions={takeResolutions} onStatus={setServer} onLedger={loadLedger} />
 
         {message && (
           <p className={`message ${message.kind}`} role="status">
@@ -261,7 +292,7 @@ export default function App() {
  * and the resolution of the lines on this page to a market and a runner.
  * Read only: nothing here places, cancels or changes a setting.
  */
-function ServerPanel({ date, lines, onResolutions }) {
+function ServerPanel({ date, lines, onResolutions, onStatus, onLedger }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(null);
   const [note, setNote] = useState(null);
@@ -289,11 +320,19 @@ function ServerPanel({ date, lines, onResolutions }) {
 
   async function loadStatus() {
     const r = await api('/admin/status');
-    if (r.ok) setStatus(r.data);
+    if (r.ok) {
+      setStatus(r.data);
+      if (onStatus) onStatus(r.data);
+    }
     return r;
   }
 
-  const refresh = () => run('status', loadStatus);
+  const refresh = () =>
+    run('status', async () => {
+      const r = await loadStatus();
+      if (r.ok && onLedger) await onLedger();
+      return r;
+    });
 
   const control = (action) =>
     run(action, async () => {
@@ -346,7 +385,7 @@ function ServerPanel({ date, lines, onResolutions }) {
       <h2>
         Server{' '}
         <span className="sub">
-          version 1, step 3: {status ? (realMode ? 'real mode.' : 'paper. Orders are built and recorded; nothing is sent.') : 'mode not read yet.'}
+          version 1, step 4: {status ? (realMode ? 'REAL mode: a confirmed Place sends an order to Betfair.' : 'paper: a confirmed Place is recorded; nothing is sent.') : 'mode not read yet.'}
         </span>
       </h2>
       <p className="status-line">
@@ -380,6 +419,9 @@ function ServerPanel({ date, lines, onResolutions }) {
         </button>
         <button type="button" className="primary" onClick={resolve} disabled={!!busy}>
           {busy === 'resolve' ? 'Resolving…' : 'Resolve the lines on this page'}
+        </button>
+        <button type="button" disabled title="Built last: after one paper Place and one real Place by Charles on real lines">
+          Place all: not built yet
         </button>
       </div>
       {note && (
@@ -668,12 +710,46 @@ function PasteGroup({ paste, lines, lineProps, canRemove, onRemove }) {
 
 const STATUS_LABEL = { placed: 'Placed', not_placed: 'Not placed', waiting: 'Waiting' };
 
-function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
+function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null, server = null, orders = [], date = '', onLedger = null }) {
   const [formOpen, setFormOpen] = useState(false);
+  const [build, setBuild] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [note, setNote] = useState(null);
+  const [reason, setReason] = useState('');
   const c = line.cells || {};
   const d = line.derived || {};
   const latest = entries.length ? entries[entries.length - 1] : null;
   const status = latest ? latest.kind : 'waiting';
+  const back = backLegOf(entries);
+  const blocker = placeBlocker(line, entries, server);
+  const orderStatus = orderStatusLabel(orders);
+
+  async function ask() {
+    setBusy('build');
+    setNote(null);
+    setBuild(null);
+    const body = buildBody({ date: line.date || date, line, back });
+    const r = await api('/orders/build', { method: 'POST', body });
+    if (r.ok && r.data) setBuild({ ...r.data, _body: body });
+    else setNote({ kind: 'warn', text: explain(r) });
+    setBusy(null);
+  }
+
+  async function confirm() {
+    if (!build) return;
+    setBusy('place');
+    setNote(null);
+    const r = await api('/orders/place', { method: 'POST', body: placeBody(build._body, build, reason) });
+    if (r.ok && r.data) {
+      setBuild(null);
+      setReason('');
+      setNote({ kind: 'ok', text: orderStatusLabel([r.data]) });
+      if (onLedger) await onLedger();
+    } else {
+      setNote({ kind: 'warn', text: explain(r) });
+    }
+    setBusy(null);
+  }
 
   return (
     <article className={`line ${line.parsed ? '' : 'flagged'} status-${status}`}>
@@ -725,6 +801,7 @@ function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
                 </div>
               </dl>
               <p className="extracted">{extractedLabel(d)}</p>
+              <p className="why">No order from this line: the six-cell email is the 06:30 selection, in or out, and nothing more.</p>
             </>
           ) : (
             <dl className="cells">
@@ -773,7 +850,22 @@ function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
         <button type="button" onClick={onNotPlaced}>
           Not placed
         </button>
+        {line.parsed && line.layout !== 'six' && (
+          <button type="button" className="place" onClick={ask} disabled={!!blocker || !!busy} title={blocker || 'Ask the server to build the lay; nothing is sent until you confirm'}>
+            {busy === 'build' ? 'Asking the server…' : 'Place: build the lay'}
+          </button>
+        )}
       </div>
+      {line.parsed && line.layout !== 'six' && back && blocker && <p className="why">Place: {blocker}.</p>}
+      {orderStatus && <p className="order-status">{orderStatus}</p>}
+      {note && (
+        <p className={`message ${note.kind}`} role="status">
+          {note.text}
+        </p>
+      )}
+      {build && (
+        <ConfirmPanel build={build} server={server} reason={reason} setReason={setReason} busy={busy} onConfirm={confirm} onClose={() => setBuild(null)} />
+      )}
 
       {formOpen && (
         <PlacedForm
@@ -788,6 +880,64 @@ function LineCard({ line, entries, onPlaced, onNotPlaced, resolution = null }) {
 
       {entries.length > 0 && <History entries={entries} />}
     </article>
+  );
+}
+
+/**
+ * Step 4: what the server resolved and would send, before anything is sent. The deepest rung only at this
+ * stage (Charles, 2 November 2026): the lay price from the back actually taken, the percentage under, the
+ * slip's target beside it. Confirm is disabled unless the server named the lay rule and refused nothing.
+ */
+function ConfirmPanel({ build, server, reason, setReason, busy, onConfirm, onClose }) {
+  const blocker = confirmBlocker(build, server);
+  const real = build.mode === 'real';
+  const refusals = build.refusals || [];
+  const notes = build.notes || [];
+  return (
+    <section className={`confirm ${real ? 'real' : 'paper'}`} aria-label="Confirm the lay">
+      <h3>
+        {real ? 'Confirm: REAL lay' : 'Confirm: paper lay'} · {build.rung || 'no lay price'}
+      </h3>
+      <dl className="confirm-rows">
+        {confirmRows(build).map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      {notes.length > 0 && (
+        <ul className="notes">
+          {notes.map((n) => (
+            <li key={n}>{n}</li>
+          ))}
+        </ul>
+      )}
+      {refusals.length > 0 && (
+        <ul className="refusals">
+          {refusals.map((n) => (
+            <li key={n}>Refused: {n}</li>
+          ))}
+        </ul>
+      )}
+      {blocker && refusals.length === 0 && (
+        <p className="message warn" role="status">
+          {blocker}
+        </p>
+      )}
+      <label className="reason">
+        <span>Reason, optional</span>
+        <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} />
+      </label>
+      <div className="row">
+        <button type="button" className={`primary ${real ? 'real' : ''}`} onClick={onConfirm} disabled={!!blocker || !!busy}>
+          {busy === 'place' ? 'Placing…' : real ? 'Confirm and place this REAL lay' : 'Confirm and record this paper lay'}
+        </button>
+        <button type="button" onClick={onClose} disabled={!!busy}>
+          Close without placing
+        </button>
+      </div>
+    </section>
   );
 }
 

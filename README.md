@@ -29,15 +29,15 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
-| B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture. The 0.6.5 and 0.6.6 Pages builds failed on tests (a CSV row split on commas; three CSV rows compared as literals without the nine new columns; a six-column header rule that caught the missing-column test); 0.6.7 fixes them |
+| B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture. The 0.6.5 and 0.6.6 Pages builds failed on tests (a CSV row split on commas; three CSV rows compared as literals without the nine new columns; a six-column header rule that caught the missing-column test); 0.6.7 fixes them. Charles's ruling of 2 November 2026: no order is ever built from a six-cell line, the six-cell email being the 06:30 selection, in or out, and nothing more (page 0.8.0, server 0.8.1) |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
 | 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 116 tests (9 for the Pages Function, 9 for the page's calls to its server, 6 for the six-cell layout from the fourth real paste, 4 for the test order's controls), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
 | v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
-| v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Built 2 November 2026, 0.7.0: the builder with every refusal named, the paper ledger, the real path behind the stored mode and the kill switch, the test order (BACK 2.00 at 1000, placed and cancelled, real mode only with the sentence typed). No order sent. Real mode stays off until Charles writes the settings version. The test order ran for real on 2 November 2026 at 13:41 UTC, by Charles from the page, after he wrote the real-mode settings version himself and pressed Resume placing: BACK 2.00 at 1000 on Sovereign Bay, 19:30 Wolverhampton (1.264841684), bet 449945060703, reference FB13-TEST-134125; placed (EXECUTABLE, nothing matched), seen, cancelled (2.00 cancelled), gone, in 663 ms over four calls, every one answered 200; verdict "passed: placed, seen, cancelled, gone". He pressed the kill switch at 13:42 UTC. The day's real money at risk counts 2.00 by his ruling. The first and only real order FB13 has sent |
-| v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
+| v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Built 2 November 2026, 0.7.0: the builder with every refusal named, the paper ledger, the real path behind the stored mode and the kill switch, the test order (BACK 2.00 at 1000, placed and cancelled, real mode only with the sentence typed). No order sent. Real mode stays off until Charles writes the settings version. The test order ran for real on 2 November 2026 at 13:41 UTC, by Charles from the page, after he wrote the real-mode settings version himself and pressed Resume placing: BACK 2.00 at 1000 on Sovereign Bay, 19:30 Wolverhampton (1.264841684), bet 449945060703, reference FB13-TEST-134125; placed (EXECUTABLE, nothing matched), seen, cancelled (2.00 cancelled), gone, in 663 ms over four calls, every one answered 200; verdict "passed: placed, seen, cancelled, gone". He pressed the kill switch at 13:42 UTC. The day's real money at risk counts 2.00 by his ruling. The first and only real order FB13 has sent. Charles's rulings of the evening of 2 November 2026, applied in 0.8.1: the lay price comes from the back price actually taken, by the footnote's rule, the deepest rung only at this stage; the Betfair cap is shown and never applied to a lay; a refusal for size or a cap says what back stake would fit; a race already run says so, from the day's kept first catalogue; a six-cell line is refused |
+| v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Built 2 November 2026, 0.8.0, to Charles's approved design: the Place button on seven-cell lines only, enabled once the back leg is recorded Placed; the confirm panel shows the market, runner, side, the lay price taken with the percentage under and the rung, the slip's target beside it (and says when they differ by more than a tick), size, liability, the caps, the Betfair cap as shown only, the references, the ticket, every note and every refusal; a confirmed Place sends the ticket; the order status on the line from the server's ledger. Nothing is confirmed unless the server names the lay rule in force (server 0.8.1). **Place all is not built**: a disabled button, until one paper Place and one real Place have been done by Charles on real lines |
 | v1 5 | Tests from real data | Server tests written alongside each step: 96 cases, run by every Cloud Build before the image is built, and before any push in a one-off tests-only Cloud Build (the first such run, 2 November 2026, found a session-expiry bug and two stale tests: 0.7.3); two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver and the order builder are tested against the first real catalogue, 2 November 2026 (`server/tests/fixtures/catalogue-2026-11-02.json`): all 30 markets resolve from their own time, venue and first runner |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
@@ -128,10 +128,12 @@ it is.
 
 **The six-cell layout** (first seen 2 November 2026, the real 08:00 slip):
 one row per selection, six cells. Race | Horse | a price | a second price |
-a decision | a button label. Charles's reading, to confirm with Mark: the
-first price is about 3 to 4 percent under the Betfair price, probably the lay
-target; the second is the next favourite's price. Nothing is assumed: the
-page labels them **Price A** and **Price B**. The decision cell is "In" or
+a decision | a button label. Charles's ruling of 2 November 2026: the six-cell
+email is the 06:30 selection, in or out, and nothing more; its prices are not
+lay targets. Evidence: Hard Stare at 13:00 Plumpton had Price A 2.76 in that
+email and a lay target of 2.88 on the 08:00 slip, which is 12.5 percent under
+the 07:52 Betfair price of 3.30, rounded down to a tick. The page labels the
+prices **Price A** and **Price B** and reads nothing into them. The decision cell is "In" or
 "Out", a middle dot, and a reason, as in
 `In · clear favourite, Betfair 2.85, next 3.04, best 2.88` or
 `Out · favourite 4.51 is longer than 4.0`. The cell is kept verbatim; beside
@@ -142,10 +144,10 @@ in the reason; none extracted". A cell that does not start with In or Out and
 a middle dot is flagged and the row shown raw, never guessed. The button cell
 is "Take out" or "Put in". There is no bookmaker column (the "where" field
 offers Betfair and Other), no BOG, no API line and **no Betfair cap**: the
-line says "none in this layout", and the order builder applies no course cap
-to such a line. **No order is built from a six-cell line** until Charles
-confirms with Mark which price is the lay target; when he does, the builder
-would take Price A as the lay target and Price B not at all.
+line says "none in this layout" (a cap would not apply to a lay in any case;
+see step 3). **No order is ever built from a six-cell line**: the page shows no
+Place button on one, and the server refuses a build that names the layout. Lay
+targets come from the seven-cell slips only.
 
 **The seven-cell layout** (30 October to 1 November 2026): Race, Horse, Best
 price, Best BOG, Betfair, Lay target, Betfair cap.
@@ -332,34 +334,76 @@ Charles's rules of 2 November 2026, as built:
 
 ### Step 3: the order builder, paper first
 
-Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
+Built 2 November 2026 (0.7.0) from Charles's rulings; the lay rule of the slip's
+footnote applied the same evening (0.8.1). One real order has been sent: the
+£2 test order of 13:41 UTC that day, placed and cancelled (below).
 
-- **What a Place builds.** From a slip line whose back leg is recorded as
-  Placed: the market and runner from the resolver; a LAY LIMIT order at the
-  slip's lay target moved down to a valid Betfair tick (never above the
-  target); size = back stake x back price / lay price, down to the penny;
+- **What a Place builds.** From a seven-cell slip line whose back leg is
+  recorded as Placed: the market and runner from the resolver; one LAY LIMIT
+  order whose price comes from the **back price actually taken**, by the rule
+  below; size = back stake x back price / lay price, down to the penny;
   liability = size x (price - 1), the money at risk; persistence LAPSE;
   `customerOrderRef` `FB13-YYYYMMDD-HHMM-<12 hex of the line>` (31
   characters) and `customerStrategyRef` `FB13-HHMM` (the slot). The exact
   placeOrders body is shown before anything is sent, with a sixteen-character
   ticket; a Place must present that ticket, and a build that differs is
-  refused. `POST /orders/build` returns the order and every reason it would be
-  refused, so the confirm panel (step 4) can show both.
+  refused. `POST /orders/build` returns the order, every note and every reason
+  it would be refused, and names the rule in force (`rule:
+  footnote-2026-11-02`); the page confirms nothing without that name.
+- **The lay rule** (the footnote of the 08:00 slip of 2 November 2026, as
+  Charles read it to the build agent). Back price under 2.0: one lay, 5 percent
+  under the back. 2.0 and over: a ladder of three lays, a third each, at 40, 70
+  and 100 percent of the move down to 12.5 percent under, never closer than 3
+  percent to the back, every rung rounded **down** to a tick. The slip's "Lay
+  target" is the deepest rung; the handler recalculates it from the back price
+  actually taken. **At this stage** a Place builds the deepest rung only, one
+  lay of the full size, from the recorded back price; the build says "deepest
+  rung only, 1 of 3" (or "one lay, 5% under the back, 1 of 1"), gives the
+  percentage under, shows the slip's target beside it, and says when the two
+  differ by more than a tick. Worked: 1.67 backed is under 2.0, so one lay at
+  1.67 x 0.95 = 1.5865, down to the tick 1.58; 3.25 backed gives rungs at 3.05,
+  2.96 and 2.84 (5, 8.75 and 12.5 percent under, each down to a tick), and the
+  deepest, 2.84, is laid.
+- **The next stage: the full ladder**, not built. Three lays, a third of the
+  size each, at the three rungs. The sizing question, to be ruled before it is
+  built: the minimum of £2 an order makes a third of the formula's size too
+  small at the trial stake, so each rung would be £2 at least. Worked example,
+  £2.00 backed at 3.25: the formula's lay is 2.28, a third is 0.76, under the
+  minimum; three lays of £2.00 at 3.05, 2.96 and 2.84 are £6 of lays with
+  liabilities 4.10, 3.92 and 3.68, **£11.70 in all, over the £10 day cap**
+  (each under the £5 order cap). The back stake that makes the thirds exactly
+  £2.00 is £5.25 at 3.25. Proposal for Charles: either the per-day cap rises
+  to £15 for the ladder trial, with the per-order cap staying at £5 and the
+  ladder's size the larger of £2 and a third of the formula's size; or the
+  ladder is trialled with two rungs, the 40 percent and the 100 percent, £2
+  each (liability 4.10 + 3.68 = 7.78, within £10). Nothing is built until he
+  rules.
+- **Later work, recorded, not built: the at-the-off rules.** Under 1.5, keep
+  the lay in running; 1.5 and over, close what is unhedged. Orders stay LAPSE
+  for now (Charles, 2 November 2026).
 - **Refusals, each named**: the kill switch; the stored mode (real needs the
-  stored mode real and Charles's Access confirmation); the line not resolved;
-  the race already started; a cell that does not read as a number; a lay
-  target outside 1.01 to 1000; a size below £2.00, the minimum for any order
-  (Charles's ruling of 2 November 2026, whatever Betfair's currency table
-  says); a size above the slip's Betfair cap for the course (an assumption,
-  below, and the refusal says so); liability above the per-order cap; the day's money at
-  risk for the mode above the per-day cap; the line already placed that day in
-  that mode (cancelled or not). Paper and real are counted separately.
-- **A line without a Betfair cap** (the six-cell slip layout of 2 November
-  2026 has no cap column) is built with no course cap, and the build carries
-  the note "no Betfair cap on this line (the six-cell slip layout carries
-  none): no course cap applied" for the confirm panel to show (Charles,
-  2 November 2026). Nothing is built from a six-cell line until he confirms
-  with Mark which price is the lay target.
+  stored mode real and Charles's Access confirmation); a six-cell line; the
+  line not resolved; **the race already run** (the day's first catalogue is
+  kept, so a race that has left Betfair's catalogue still resolves and is
+  refused in those words, never as "not resolved"); a back price or stake
+  that does not read as a number; no lay target on the slip's line (a line
+  the slip did not give a target is not laid); a lay price from the back below
+  1.01; a size below £2.00, the minimum for any order (Charles's ruling of 2
+  November 2026, whatever Betfair's currency table says); liability above the
+  per-order cap; the day's money at risk for the mode above the per-day cap;
+  the line already placed that day in that mode (cancelled or not). **A
+  refusal for size or for a cap says what back stake would fit**: at 1.67
+  backed and 1.58 laid, "size 0.52 is below the minimum ... a back stake of
+  1.90 or more at 1.67 would fit"; £50 backed is "liability 30.65 ... a back
+  stake of 8.15 or less at 1.67 would fit". Paper and real are counted
+  separately.
+- **The Betfair cap does not apply to a lay** (Charles, 2 November 2026). The
+  footnote says it is the most to put on Betfair in the morning, with
+  anything more going to BOG bookmakers: a limit on the back. The build reads
+  the cap, shows it with the note "shown only ... a limit on the back, not on
+  this lay", and never refuses for it. The earlier assumption (0.7.0 to
+  0.7.3), that the cap limited the lay's size, is withdrawn on this evidence;
+  Claude Strategy had read it the same way as the footnote.
 - **Paper** builds the exact order, records it under `orders/<date>/` in the
   orders bucket as `placed` with `sent: false`, and sends nothing. **Real**
   sends it through the session and records Betfair's report (`placed` with
@@ -374,26 +418,26 @@ Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
   today's catalogue and not yet run, the caps hold, and the operator typed
   exactly: `I confirm the real test order: back 2.00 at 1000`. Its references
   are `FB13-TEST`; it is never a line's order; its 2.00 counts toward the real
-  day's money at risk. The page's server panel carries its controls, enabled
-  only when the stored mode is real.
+  day's money at risk. **Run for real once**, by Charles from the page on 2
+  November 2026 at 13:41:25 UTC: BACK 2.00 at 1000 on Sovereign Bay, 19:30
+  Wolverhampton (1.264841684), bet 449945060703, reference FB13-TEST-134125;
+  four calls, each answered 200, open about one second, never matched;
+  verdict "passed: placed, seen, cancelled, gone". Accepted by Charles.
 - **Charles's rulings of 2 November 2026 on the builder's choices.**
-  Approved: the lay target moves down to the tick, never up; a line placed
-  once that day in that mode is never placed again, cancelled or not; the
-  day's money at risk counts every placed order, cancelled or not, and the
-  test order's £2; nothing is laid once the race has started; the caps stay
-  at £5 an order and £10 a mode a day. Ruled: the minimum size is £2.00 for
-  any order, whatever Betfair's currency table says. **Assumption, kept for
-  now at Charles's word:** the slip's "Betfair cap" for a course is read as
-  the most that may be laid at that course in backer's stake (the lay's
-  size). Claude Strategy's reading of Mark's slip note is that the cap limits
-  the Betfair BACK stake at a course, the excess going to bookmakers, so it
-  may not apply to lays at all. It is confirmed at the handover with Mark;
-  until then a lay refused for it says so in the refusal.
-- **Paper trials under the caps** (Charles's ruling 7): record the back leg at
-  a stake that gives a lay of at least £2 and a liability under £5, about £3 at
-  the prices on the slip (at 1.67 backed and 1.75 laid, £3 gives a lay of
-  £2.86 with £2.15 at risk; £2 gives £1.90, below the minimum; £50 gives
-  £35.78 at risk, above the cap).
+  Approved: a line placed once that day in that mode is never placed again,
+  cancelled or not; the day's money at risk counts every placed order,
+  cancelled or not, and the test order's £2; nothing is laid once the race has
+  started; the caps stay at £5 an order and £10 a mode a day. Ruled: the
+  minimum size is £2.00 for any order, whatever Betfair's currency table
+  says. The evening's rulings (the lay rule, the cap, the six-cell lines,
+  "race already run", the trial stake) are above and below.
+- **The trial stake** (Charles's ruling 6, 2 November 2026): the earlier
+  "about £3" fitted short prices; at slip prices of 2.5 to 4.0 the trial back
+  is **£2.00**. Worked, as the tests check it: 3.25 backed for £2.00 lays the
+  deepest rung 2.84 for 2.28 with 4.20 at risk; at the slip's own 2.88 the
+  formula gives 2.25 and 4.23 (Charles's "about £2.26 and about £4.24", with
+  the size rounded down to the penny). At 1.67 backed, £3 lays 1.58 for 3.17
+  with 1.84 at risk, and £2 lays 2.11 with 1.22 at risk.
 
 ### Endpoints
 
@@ -602,20 +646,21 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   "Chelmsford" is flagged, not guessed, with the venue named. Which names
   Mark's slip uses is known only from real slips; the first real resolve at
   08:00 UK on 2 November 2026 is the test.
-- **The Betfair cap's meaning** is an assumption (step 3, above): read as a
-  cap on the lay's size until the handover with Mark; Claude Strategy reads
-  it as a cap on the Betfair BACK stake at a course. A lay refused for it
-  says so. With the caps at £5 an order, a slip line at the page's default
-  stake of 50 is refused in paper too (£35.78 at risk at 1.67/1.75); Charles's
-  ruling 7 is a recorded stake of about £3 for paper trials.
+- **The Betfair cap's meaning** was an assumption until the evening of
+  2 November 2026: Charles read the footnote, which makes it the most to put
+  on Betfair in the morning with the excess going to BOG bookmakers, a limit
+  on the back. It is shown on the confirm panel and never applied to a lay
+  (step 3, above). With the caps at £5 an order, a slip line at the page's
+  default stake of 50 is refused in paper too, and the refusal says what
+  stake would fit; the trial back is £2.00 at slip prices of 2.5 to 4.0.
 - **Browser storage.** Entries live in this browser on this device. Clearing
   site data, a different browser, or the browser evicting storage loses them.
   Export is the only way out in version 0.
 - **The slip's layout changes.** The 08:00 slip of 2 November 2026 arrived in
   a new six-cell layout and 0.6.4 refused all 22 rows, correctly. 0.6.5 reads
-  it; what its two prices mean, and whether a Betfair cap exists elsewhere, is
-  confirmed with Mark. A further change would be refused the same way, shown
-  raw, until read.
+  it; Charles ruled the same day that it is the 06:30 selection, in or out,
+  and nothing more, and that no order is ever built from it. A further change
+  would be refused the same way, shown raw, until read.
 - **The clipboard's shape.** Confirmed from three real pastes, 30 October and
   1 November 2026 (Gmail in Safari 27.2 on a Mac, the 10:00 and 08:00 slips):
   both text/html and text/plain arrive; the HTML table has no header row, so
@@ -637,9 +682,20 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   the per-deployment addresses served the page to a plain request from Cape
   Town at 02:48 UTC on 2 November 2026. The API refuses there too (401, no
   token) and the page holds no data for a stranger, since browser storage is
-  per origin; but Access covers the custom hostname only. Charles decides
-  whether to add `fb13-d7g.pages.dev` and `*.fb13-d7g.pages.dev` to the
-  Access application.
+  per origin; but Access covers the custom hostname only. Charles's ruling of
+  2 November 2026: leave them. The server refuses any call without a valid
+  Access token, so the pages.dev copies are a shell with no way in.
+- **Betfair labels this account's orders `regulatorCode` GIBRALTAR REGULATOR**
+  (in the listCurrentOrders answer for the test order, 2 November 2026).
+  Recorded as a fact Betfair reports for this account; no action (Charles).
+- **Only the deepest rung is laid at this stage.** The footnote's ladder of
+  three lays waits for the sizing ruling (step 3, above); the at-the-off rules
+  are recorded, not built; orders stay LAPSE.
+- **The day's first catalogue is read back after a redeploy** from the day's
+  earliest stored listMarketCatalogue record, scanning the day's records
+  oldest first (at most 300 reads), so the first build or resolve after a
+  redeploy may take a few seconds longer. A market that appears later in the
+  day is added to the kept list; a market that closes stays on it.
 - **The operator list holds two addresses**, from the first settings version
   written by hand at Charles's word on 2 November 2026. Others are added by a
   new version, never by editing.
