@@ -1,6 +1,6 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 05:14 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 05:21 UTC, by the
 build agent, from the clock.
 
 **State:** step 2 is deployed and ready for the first login. Revision
@@ -23,13 +23,13 @@ Placing is disabled.
   as a fixture and tests the resolver against real lines.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** at Charles's ask, removed three texts from the page (the
-banner, the export section's worksheet notice, the footer's worksheet notice)
-and the style rule nothing used after; page only, `server/**` untouched, so no
-server redeploy and the Betfair session stands. 0.6.2, committed locally,
-not pushed; the push waits for Charles's word. Before that: pushed 0.6.0
-(7c9b01c) and 0.6.1 (945b2c1), watched both builds to SUCCESS, read the
-service back and called `/health` and `/ready`.
+**Last did:** pushed 75379da (status) and bec76e5 (0.6.2: the banner, the
+export section's worksheet notice and the footer's worksheet notice removed
+from the page, at Charles's ask) on his word. Page and docs only: no Cloud
+Build ran, the server stays at revision 00003-gv8 (945b2c1, 0.6.1), its
+settings loaded at 02:58:57 UTC, Betfair session none. The Pages build
+passed; the live bundle is 0.6.2 at bec76e5 and carries none of the three
+texts. The export file's own notice is left as it is, as Charles ruled.
 
 **Found and reported, not acted on:**
 - The pages.dev addresses serve the page without Access. The API refuses
