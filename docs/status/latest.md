@@ -1,14 +1,14 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 10:17 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 12:39 UTC, by the
 build agent, from the clock.
 
-**State:** the page at fb13.chimerasportstrading.com is still 0.6.4: the Pages
-builds of 0.6.5 (a9abada) and 0.6.6 (f4c534b) failed on tests. The six-cell
-page fix ec4c6d2 (0.6.7) sits on origin/main (f4c534b), page only, unpushed,
-and its vitest suite passed in a one-off tests-only Cloud Build, as Charles
-asked instead of reading Cloudflare's log: build 3eea2314, node v22.23.4,
-9 files, 112 tests, none failed. Above it, unpushed: the four server commits
+**State:** the page is 0.6.7, live: ec4c6d2 (the six-cell layout and its two
+test fixes) was pushed alone by hash on Charles's word; the Cloudflare Pages
+check passed at 12:39:00 UTC and the live bundle showed 0.6.7, stamped
+ec4c6d2, at 12:39:29 UTC. The Pages builds of 0.6.5 and 0.6.6 had failed on
+tests; before this push the suite passed in a one-off tests-only Cloud Build
+(3eea2314, node v22.23.4, 112 tests). origin/main = ec4c6d2. Above it, unpushed: the four server commits
 of step 3 (9014251 status, 0c693e1 0.7.0, bece150 0.7.1, 3dd34e6 0.7.2) and
 this fix, 0.7.3. The server's pytest suite on 3dd34e6 failed 3 of 96 in the
 same kind of build (2a7447ab): one real bug (a Betfair session error was
@@ -21,10 +21,8 @@ page suite 116 passed on node v22.23.4 (fbd88e0a). The live server is 0.6.4 (rev
 been sent.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- His word to push ec4c6d2 alone, by hash (`git push origin
-  ec4c6d2:refs/heads/main`), after the 112 are reported; then the Pages check
-  and the live bundle at 0.6.7.
-- Then he pastes the 08:00 slip into the current instance and presses Resolve.
+- Charles pastes the 08:00 slip into the page (now 0.6.7, six-cell layout read)
+  and presses Resolve on the current instance (server 0.6.4).
 - Later, his word to push the server commits (9014251, 0c693e1, bece150,
   3dd34e6, 288b9b6 and this status commit), both suites green in the cloud on
   288b9b6. That deploy replaces the instance and drops the
@@ -36,7 +34,10 @@ been sent.
   Mark.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** confirmed 0.7.3 green in the cloud (above). Before that: ran the
+**Last did:** pushed ec4c6d2 alone by hash (12:3x UTC); the Pages check passed
+at 12:39:00 UTC and 0.6.7 went live at 12:39:29 UTC; no Cloud Build fired (the
+commit touches no server file); the live server and the session untouched.
+Before that: confirmed 0.7.3 green in the cloud (above), and ran the
 tests in one-off tests-only Cloud Builds (a `git archive`
 of the exact commit, an inline config with one step, no trigger, no deploy, no
 new resource: the staging bucket `chiops_cloudbuild` already existed), read the
