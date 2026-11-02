@@ -1,10 +1,13 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 08:05 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 08:27 UTC, by the
 build agent, from the clock.
 
-**State:** the page reads the new six-cell layout of the 08:00 slip (0.6.5,
-page only, on top of ca06459, committed locally, not pushed). Charles's paste
+**State:** the page fix for the six-cell layout (0.6.5, a9abada) was pushed
+alone on Charles's word, and its Pages build failed at `npm test`: the new
+export test split a CSV row on commas, and the decision cell holds commas
+inside its quotes. The page stayed at 0.6.4. 0.6.6 fixes the test, page only,
+on top of a9abada, committed locally, not pushed. Charles's paste
 of 07:40 UTC on 2 November 2026 was refused by 0.6.4, all 22 rows, correctly;
 the real diagnostics are the fourth fixture. Price A and Price B are labels,
 not meanings, until Charles confirms with Mark; no order is built from such a

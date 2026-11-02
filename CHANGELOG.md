@@ -2,6 +2,15 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.6] — 2026-11-02 — the 0.6.5 Pages build failed on a test
+
+### Fixed
+- The Pages build of a9abada (0.6.5) failed at `npm test`: the new export test
+  split a CSV row on commas, and the six-cell decision cell holds commas inside
+  its quotes, so every later column was misplaced. The test now splits the row
+  as a CSV reader would (quoted fields, doubled quotes). The page's code is
+  unchanged; 0.6.5 never went live, the page stayed at 0.6.4. Page only.
+
 ## [0.6.5] — 2026-11-02 — the six-cell layout of the 08:00 slip
 
 ### Why

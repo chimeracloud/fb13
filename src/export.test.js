@@ -192,14 +192,47 @@ import { parsePlainSlip as parseSix } from './parse.js';
 import { makeEntry as makeSixEntry } from './entries.js';
 import { entriesToCsv as sixCsv } from './export.js';
 
+/** One CSV row into its fields, RFC 4180: a quoted field may hold commas, quotes doubled. */
+function splitCsvRow(row) {
+  const out = [];
+  let cur = '';
+  let quoted = false;
+  for (let i = 0; i < row.length; i += 1) {
+    const ch = row[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (row[i + 1] === '"') {
+          cur += '"';
+          i += 1;
+        } else {
+          quoted = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ',') {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
 describe('a six-cell line in the export', () => {
   it('carries the four new cells and what was extracted, in the appended columns, with the old ones blank', () => {
     const parsed = parseSix('20:00 Wolverhampton\tMerapi\t1.04\t3.58\tIn · clear favourite, Betfair 1.04, next 3.58, best null\tTake out\n');
     const line = { ...parsed.lines[0], slot: '08:00', date: '2026-11-02' };
     const entry = makeSixEntry({ line, kind: 'not_placed', now: new Date('2026-11-02T08:05:00.000Z') });
     const rows = sixCsv([entry], [line]).slice(1).split('\r\n');
-    const fields = rows[1].split(',');
+    const fields = splitCsvRow(rows[1]); // the decision cell holds commas, so a plain split would misplace every later column
     const names = rows[0].split(',');
+    expect(fields).toHaveLength(names.length);
+    expect(splitCsvRow('a,"b, c","d ""e""",f')).toEqual(['a', 'b, c', 'd "e"', 'f']);
     const at = (name) => fields[names.indexOf(name)];
     expect(at('race')).toBe('20:00 Wolverhampton');
     expect(at('horse')).toBe('Merapi');
@@ -209,6 +242,7 @@ describe('a six-cell line in the export', () => {
     expect(at('layout')).toBe('six');
     expect(at('price_a')).toBe('1.04');
     expect(at('price_b')).toBe('3.58');
+    expect(at('decision')).toBe('In · clear favourite, Betfair 1.04, next 3.58, best null');
     expect(at('button')).toBe('Take out');
     expect(at('decision_in_out')).toBe('In');
     expect(at('decision_betfair')).toBe('1.04');

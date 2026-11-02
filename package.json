@@ -1,7 +1,7 @@
 {
   "name": "fb13-trade-slip",
   "private": true,
-  "version": "0.6.5",
+  "version": "0.6.6",
   "type": "module",
   "description": "FB13 trade slip. Version 1 step 1: the page records what a person did elsewhere; the server shell holds the settings, the caps and the kill switch, and makes no Betfair call yet.",
   "scripts": {
