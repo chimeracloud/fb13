@@ -1,10 +1,25 @@
+import json
 import os
 from datetime import date, datetime, timezone
 
 import pytest
+import requests
 
 from app.activity import Activity
-from app.betfair import BetfairRefused, BetfairSession, RECORD_PREFIX, iso_z, london_day_window, london_hhmm, scrub, simplify, summarise
+from app.betfair import (
+    RECORD_PREFIX,
+    BetfairRefused,
+    BetfairSession,
+    RecordingSession,
+    default_client_factory,
+    http_trail,
+    iso_z,
+    london_day_window,
+    london_hhmm,
+    scrub,
+    simplify,
+    summarise,
+)
 from app.storage import MemoryStore
 
 CREDS = {
@@ -27,16 +42,33 @@ class FakeBetting:
         return self.result
 
 
+class FakeSession:
+    """Stands in for RecordingSession: whatever the fake call 'sent' is handed over by drain()."""
+
+    def __init__(self):
+        self.trail = []
+
+    def drain(self):
+        trail, self.trail = self.trail, []
+        return trail
+
+
+LOGIN_SEND = {"at": "2026-11-02T05:53:38.000Z", "method": "POST", "url": "https://identitysso-cert.betfair.com/api/certlogin", "status": 200, "ms": 310.0, "error": None}
+
+
 class FakeClient:
     def __init__(self, login_error=None, keepalive_error=None, catalogue=None, catalogue_error=None):
         self.login_error, self.keepalive_error = login_error, keepalive_error
         self.logins = self.keepalives = self.logouts = 0
         self.betting = FakeBetting(catalogue, catalogue_error)
+        self.session = FakeSession()
 
     def login(self):
         self.logins += 1
         if self.login_error:
+            self.session.trail.append({**LOGIN_SEND, "status": None, "error": f"{type(self.login_error).__name__}: {self.login_error}"})
             raise self.login_error
+        self.session.trail.append(LOGIN_SEND)
 
     def keep_alive(self):
         self.keepalives += 1
@@ -81,6 +113,7 @@ def test_login_once_with_the_certificate_on_the_delayed_key():
     assert len(names) == 1
     rec = store.get(names[0])
     assert rec["operation"] == "login" and rec["response"] == {"status": "SUCCESS"} and rec["key"] == "delayed"
+    assert rec["http"] == [LOGIN_SEND]  # the record says what was sent and what came back
     assert "user-name" not in str(rec) and "pass-word" not in str(rec) and "delayed-key" not in str(rec)
     assert [e["event"] for e in activity.recent()] == ["betfair_login"]
 
@@ -90,9 +123,11 @@ def test_a_failed_login_latches_and_is_never_retried():
     s, store, activity, factory = make(client)
     with pytest.raises(BetfairRefused) as exc:
         s.login("x@y.z")
-    assert exc.value.status == 502 and "Not retried" in exc.value.detail
+    assert exc.value.status == 424 and "Not retried" in exc.value.detail  # 424, never 502: Cloudflare replaces a 502 with its own page
     assert s.state == "failed" and s.error.startswith("RuntimeError: certlogin said NO: sessionToken=[redacted]")
-    assert "AbCdEf" not in s.error and "AbCdEf" not in str(store.get(store.names(RECORD_PREFIX)[0]))
+    rec = store.get(store.names(RECORD_PREFIX)[0])
+    assert "AbCdEf" not in s.error and "AbCdEf" not in str(rec)
+    assert rec["response"]["status"] == "FAILED" and rec["http"][0]["status"] is None and rec["http"][0]["error"].startswith("RuntimeError")
     with pytest.raises(BetfairRefused) as again:
         s.login("x@y.z")
     assert again.value.status == 409 and "betfair-reset" in again.value.detail
@@ -104,6 +139,58 @@ def test_a_failed_login_latches_and_is_never_retried():
     with pytest.raises(BetfairRefused):
         s.login("x@y.z")  # the fake still fails; the operator asked again, so one more attempt
     assert client.logins == 2 and s.state == "failed"
+
+
+def test_the_real_client_gets_the_certificate_as_a_pair_that_requests_can_key_a_pool_on(tmp_path):
+    """The first login, 2 November 2026: the factory passed the certificate and key as a list.
+    betfairlightweight hands cert_files to requests as `cert=`; requests (2.32 and later) unpacks
+    only a tuple and keys its connection pool on the value, so a list raised
+    "TypeError: unhashable type: 'list'" inside the client before anything was sent. This is that
+    call, with no network: a pool is keyed, never connected."""
+    crt, key = str(tmp_path / "client.crt"), str(tmp_path / "client.key")
+    client = default_client_factory("user-name", "pass-word", "delayed-key", (crt, key))
+    assert client.cert == (crt, key) and isinstance(client.cert, tuple)
+    assert isinstance(client.session, RecordingSession)
+    prepared = requests.Request("POST", "https://identitysso-cert.betfair.com/api/certlogin").prepare()
+    adapter = client.session.get_adapter(prepared.url)
+    assert adapter.get_connection_with_tls_context(prepared, verify=True, cert=client.cert) is not None
+    with pytest.raises(TypeError, match="unhashable"):
+        adapter.get_connection_with_tls_context(prepared, verify=True, cert=list(client.cert))  # the old behaviour
+
+
+class _Canned(requests.adapters.BaseAdapter):
+    def __init__(self, status=None, error=None):
+        super().__init__()
+        self.status, self.error = status, error
+
+    def send(self, request, **kwargs):
+        if self.error:
+            raise self.error
+        response = requests.Response()
+        response.status_code, response.url, response.request, response._content = self.status, request.url, request, b"{}"
+        return response
+
+    def close(self):
+        pass
+
+
+def test_the_recording_session_keeps_the_trail_of_every_send_and_never_a_secret():
+    session = RecordingSession()
+    session.mount("https://", _Canned(200))
+    session.post("https://identitysso-cert.betfair.com/api/certlogin?token=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789", data={"username": "user-name", "password": "pass-word"}, headers={"X-Application": "delayed-key"})
+    trail = session.drain()
+    assert len(trail) == 1
+    assert trail[0]["method"] == "POST" and trail[0]["url"] == "https://identitysso-cert.betfair.com/api/certlogin"
+    assert trail[0]["status"] == 200 and trail[0]["error"] is None and trail[0]["ms"] >= 0 and trail[0]["at"].endswith("Z")
+    text = json.dumps(trail)
+    assert "AbCdEf" not in text and "user-name" not in text and "pass-word" not in text and "delayed-key" not in text
+    assert session.drain() == []  # handed over once
+    session.mount("https://", _Canned(error=TypeError("unhashable type: 'list'")))
+    with pytest.raises(TypeError):
+        session.get("https://api.betfair.com/exchange/betting/rest/v1.0/listMarketCatalogue/")
+    trail = session.drain()
+    assert trail[0]["status"] is None and trail[0]["error"] == "TypeError: unhashable type: 'list'"
+    assert http_trail(object()) is None  # a client whose session keeps no trail: not observed, not an empty trail
 
 
 def test_markets_refused_when_not_logged_in_and_nothing_logs_in_by_itself():

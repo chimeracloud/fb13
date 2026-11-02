@@ -3,6 +3,11 @@
 // the server; the server checks it. Nothing here holds a credential. Every
 // answer comes back as { ok, status, detail, data } and never throws, so a
 // button can show what happened in words.
+//
+// 409 and 424 carry the server's own sentence (a state that refuses the call;
+// a call to Betfair that failed), shown as it is. Any other status is shown
+// with its number, so a body that is not the server's (Cloudflare's own error
+// page is JSON with a "detail" too) is seen for what it is.
 
 export async function api(path, { method = 'GET', body } = {}, fetchImpl = globalThis.fetch) {
   const init = { method, headers: { accept: 'application/json' }, credentials: 'same-origin' };
@@ -34,7 +39,7 @@ export function explain(r) {
   if (r.status === 401) return `Refused: ${r.detail}`;
   if (r.status === 403) return `Refused: ${r.detail}. Only an operator on the stored list may use the server.`;
   if (r.status === 409) return r.detail;
-  if (r.status === 502) return `The server could not do it: ${r.detail}`;
+  if (r.status === 424) return r.detail;
   if (r.status === 503) return `The server is not ready: ${r.detail}`;
   return `${r.status}: ${r.detail}`;
 }

@@ -240,10 +240,12 @@ def test_login_then_markets_then_resolve(client, operator):
     assert events[:4] == ["betfair_logout", "resolve", "betfair_catalogue", "betfair_login"]
 
 
-def test_a_failed_login_is_502_once_then_409_until_reset(client, operator):
+def test_a_failed_login_is_424_once_then_409_until_reset(client, operator):
+    """424, never 502 or 504: Cloudflare replaces an origin's 502 and 504 with its own error page,
+    which is how the first login's error reached the page as Cloudflare's words on 2 November 2026."""
     fake = _wire_betfair(fail=True)
     r = client.post("/admin/control/betfair-login", headers=operator)
-    assert r.status_code == 502 and "Not retried" in r.json()["detail"]
+    assert r.status_code == 424 and "Not retried" in r.json()["detail"]
     r = client.post("/admin/control/betfair-login", headers=operator)
     assert r.status_code == 409 and fake.logins == 1
     r = client.post("/admin/control/betfair-reset", headers=operator)

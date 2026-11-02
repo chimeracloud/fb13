@@ -15,12 +15,22 @@
 //
 // The origin is Cloud Run's deterministic URL for the service in chiops; the
 // Pages variable FB13_API_ORIGIN overrides it, should the service move.
+//
+// No 502 or 504 leaves here. Cloudflare replaces an origin's 502 or 504 with
+// its own error page, and when the request asked for JSON that page is JSON
+// with a "detail" of its own: that is how the first Betfair login's error
+// reached the page on 2 November 2026 as "The origin web server returned an
+// invalid or incomplete response to Cloudflare" instead of the server's words.
+// The server answers its own failures with 424; a failure to reach it, or a
+// 502/504 from Cloud Run's front door, is answered 503 here, in words.
 
 export const DEFAULT_ORIGIN = 'https://fb13-trade-slip-api-991649774709.europe-west2.run.app';
 export const ACCESS_HEADER = 'Cf-Access-Jwt-Assertion';
 
 const REQUEST_HEADERS = ['accept', 'content-type', 'cf-access-jwt-assertion', 'last-event-id'];
 const RESPONSE_HEADERS = ['content-type', 'cache-control', 'x-accel-buffering'];
+/** Statuses Cloudflare would replace with its own page on the way to the browser. */
+export const REPLACED_BY_CLOUDFLARE = [502, 504];
 
 function json(body, status) {
   return new Response(JSON.stringify(body), {
@@ -56,7 +66,11 @@ export async function proxy(request, env = {}, fetchImpl = fetch) {
   try {
     upstream = await fetchImpl(targetUrl(request.url, origin), init);
   } catch (e) {
-    return json({ detail: `the server did not answer: ${(e && e.name) || 'error'}` }, 502);
+    return json({ detail: `the server did not answer: ${(e && e.name) || 'error'}` }, 503);
+  }
+  if (REPLACED_BY_CLOUDFLARE.includes(upstream.status)) {
+    const text = (await upstream.text()).slice(0, 200);
+    return json({ detail: `the server's front door answered ${upstream.status}: ${text}`, upstream_status: upstream.status }, 503);
   }
   const out = new Headers({ 'cache-control': 'no-store' });
   for (const name of RESPONSE_HEADERS) {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { targetUrl, proxy, onRequest, DEFAULT_ORIGIN, ACCESS_HEADER } from '../functions/api/[[path]].js';
+import { targetUrl, proxy, onRequest, DEFAULT_ORIGIN, ACCESS_HEADER, REPLACED_BY_CLOUDFLARE } from '../functions/api/[[path]].js';
 
 const PAGE = 'https://fb13.chimerasportstrading.com';
 
@@ -76,13 +76,30 @@ describe('the proxy', () => {
     expect(fetch.calls[0].url).toBe('https://moved.example/health');
   });
 
-  it('answers 502 when the server does not answer', async () => {
+  it('answers 503, never 502, when the server does not answer', async () => {
     const failing = async () => {
       throw new TypeError('fetch failed');
     };
     const res = await proxy(new Request(`${PAGE}/api/health`, { headers: { [ACCESS_HEADER]: 't' } }), {}, failing);
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(503);
     expect((await res.json()).detail).toBe('the server did not answer: TypeError');
+  });
+
+  it('never lets a 502 or 504 through, because Cloudflare would replace it with its own page', async () => {
+    expect(REPLACED_BY_CLOUDFLARE).toEqual([502, 504]);
+    for (const status of REPLACED_BY_CLOUDFLARE) {
+      const fetch = fakeFetch(status, '<html>Bad Gateway from the front door</html>', { 'content-type': 'text/html' });
+      const res = await proxy(new Request(`${PAGE}/api/admin/status`, { headers: { [ACCESS_HEADER]: 't' } }), {}, fetch);
+      expect(res.status).toBe(503);
+      expect(res.headers.get('content-type')).toBe('application/json');
+      const body = await res.json();
+      expect(body.upstream_status).toBe(status);
+      expect(body.detail).toBe(`the server's front door answered ${status}: <html>Bad Gateway from the front door</html>`);
+    }
+    // The server's own failure code is 424, which passes through as it is.
+    const res = await proxy(new Request(`${PAGE}/api/admin/control/betfair-login`, { method: 'POST', headers: { [ACCESS_HEADER]: 't' } }), {}, fakeFetch(424, '{"detail":"Betfair login failed: X. Not retried."}'));
+    expect(res.status).toBe(424);
+    expect(await res.json()).toEqual({ detail: 'Betfair login failed: X. Not retried.' });
   });
 
   it('is what Pages calls', async () => {

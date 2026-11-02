@@ -54,7 +54,11 @@ describe('the page calling its server', () => {
     expect(explain({ ok: true })).toBe('');
     expect(explain({ ok: false, status: 401, detail: 'no Access token' })).toBe('Refused: no Access token');
     expect(explain({ ok: false, status: 409, detail: 'not logged in' })).toBe('not logged in');
-    expect(explain({ ok: false, status: 502, detail: 'Betfair login failed: X' })).toBe('The server could not do it: Betfair login failed: X');
+    expect(explain({ ok: false, status: 424, detail: 'Betfair login failed: X. Not retried.' })).toBe('Betfair login failed: X. Not retried.');
+    // Cloudflare's own 502 page is JSON with a "detail": shown with its number, never as the server's words.
+    expect(explain({ ok: false, status: 502, detail: 'The origin web server returned an invalid or incomplete response to Cloudflare.' })).toBe(
+      '502: The origin web server returned an invalid or incomplete response to Cloudflare.'
+    );
     expect(explain({ ok: false, status: 503, detail: 'sign-in is not configured' })).toBe('The server is not ready: sign-in is not configured');
     expect(explain({ ok: false, status: 418, detail: 'teapot' })).toBe('418: teapot');
   });

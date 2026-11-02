@@ -10,9 +10,18 @@ exists in this module.
 
 Every request to Betfair and every response is recorded, append-only, in the
 orders bucket under betfair/<UTC date>/, with the time and the operator who
-asked. Never a secret: the session token, the application key, the username
-and the password are not written anywhere, and any token-shaped run of
-characters in an error message is redacted before it is stored or logged.
+asked. Each record also carries the HTTP trail of the call: every send the
+requests library attempted, with method, URL (no query), status and time, or
+the error where no response came, so the record answers whether anything
+reached Betfair (RecordingSession). Never a secret: the session token, the
+application key, the username and the password are not written anywhere,
+and any token-shaped run of characters in an error message is redacted
+before it is stored or logged.
+
+A failed call to Betfair is answered 424 (failed dependency), never 502 or
+504: Cloudflare replaces an origin's 502 and 504 with its own error page,
+which is how the first login's error reached the page as Cloudflare's words
+on 2 November 2026 instead of the server's.
 The certificate and key are written to a private temporary directory on the
 container's in-memory filesystem for the login call only, and removed as soon
 as the call returns, whatever happened.
@@ -32,7 +41,10 @@ import threading
 import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
+from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
+
+import requests
 
 from app.credentials import get_credential
 from app.storage import Store
@@ -121,10 +133,49 @@ def summarise(markets: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+class RecordingSession(requests.Session):
+    """A requests session that keeps the trail of every send: method, URL without its query,
+    status and time, or the error where no response came. Never the body, never a header.
+    drain() hands the trail over for the record and starts a new one."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.trail: list[dict[str, Any]] = []
+
+    def send(self, request, **kwargs):  # type: ignore[override]
+        parts = urlsplit(request.url or "")
+        entry: dict[str, Any] = {"at": now_iso(), "method": request.method, "url": urlunsplit((parts.scheme, parts.netloc, parts.path, "", "")), "status": None, "ms": None, "error": None}
+        self.trail.append(entry)
+        started = time.monotonic()
+        try:
+            response = super().send(request, **kwargs)
+        except Exception as exc:  # noqa: BLE001 - recorded, then raised as it was
+            entry["ms"] = round((time.monotonic() - started) * 1000, 1)
+            entry["error"] = f"{type(exc).__name__}: {scrub(exc)}"
+            raise
+        entry["ms"] = round((time.monotonic() - started) * 1000, 1)
+        entry["status"] = response.status_code
+        return response
+
+    def drain(self) -> list[dict[str, Any]]:
+        trail, self.trail = self.trail, []
+        return trail
+
+
+def http_trail(client: Any) -> list[dict[str, Any]] | None:
+    """The HTTP exchanges since the last record, or None where the client's session keeps none."""
+    session = getattr(client, "session", None)
+    drain = getattr(session, "drain", None)
+    return drain() if callable(drain) else None
+
+
 def default_client_factory(username: str, password: str, app_key: str, cert_files: tuple[str, str]):
     import betfairlightweight  # here, so that importing the app loads nothing of it
 
-    return betfairlightweight.APIClient(username, password, app_key=app_key, cert_files=list(cert_files))
+    # The certificate and key go as a pair (a tuple). requests keys its connection pool on
+    # the client certificate and unpacks only a tuple; a list is unhashable there, which is
+    # what failed the first login on 2 November 2026 before anything was sent.
+    return betfairlightweight.APIClient(username, password, app_key=app_key, cert_files=tuple(cert_files), session=RecordingSession())
 
 
 class BetfairSession:
@@ -157,7 +208,7 @@ class BetfairSession:
 
     # ---- recording --------------------------------------------------------
 
-    def _record(self, operation: str, by: str | None, request: Any, response: Any, ms: float) -> None:
+    def _record(self, operation: str, by: str | None, request: Any, response: Any, ms: float, http: list[dict[str, Any]] | None = None) -> None:
         obj = {
             "at": now_iso(),
             "operation": operation,
@@ -165,6 +216,7 @@ class BetfairSession:
             "by": by,
             "request": request,
             "response": response,
+            "http": http,
             "ms": round(ms, 1),
             "session_state": self.state,
         }
@@ -218,6 +270,7 @@ class BetfairSession:
             self.login_attempts += 1
             started = time.monotonic()
             folder: str | None = None
+            client = None
             try:
                 username = self._credential("betfair_username")
                 password = self._credential("betfair_password")
@@ -233,14 +286,14 @@ class BetfairSession:
                 self.state = "failed"
                 self.failed_at = now_iso()
                 self.error = f"{type(exc).__name__}: {scrub(exc)}"
-                self._record("login", by, {"endpoint": "identitysso-cert", "key": "delayed"}, {"status": "FAILED", "error": self.error}, (time.monotonic() - started) * 1000)
+                self._record("login", by, {"endpoint": "identitysso-cert", "key": "delayed"}, {"status": "FAILED", "error": self.error}, (time.monotonic() - started) * 1000, http_trail(client))
                 self.activity.record("betfair_login_failed", by, error=self.error, attempt=self.login_attempts)
                 log.error("betfair login failed: %s", self.error, extra={"event": "betfair_login_failed", "by": by})
-                raise BetfairRefused(502, f"Betfair login failed: {self.error}. Not retried.") from exc
+                raise BetfairRefused(424, f"Betfair login failed: {self.error}. Not retried.") from exc
             finally:
                 if folder:
                     shutil.rmtree(folder, ignore_errors=True)
-            self._record("login", by, {"endpoint": "identitysso-cert", "key": "delayed"}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000)
+            self._record("login", by, {"endpoint": "identitysso-cert", "key": "delayed"}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000, http_trail(client))
             self.activity.record("betfair_login", by, key="delayed", attempt=self.login_attempts)
             log.info("betfair logged in", extra={"event": "betfair_login", "by": by})
             return self.view()
@@ -253,11 +306,11 @@ class BetfairSession:
             try:
                 self._client.keep_alive()
                 self.last_keepalive_at = now_iso()
-                self._record("keepAlive", None, {}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000)
+                self._record("keepAlive", None, {}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000, http_trail(self._client))
             except Exception as exc:  # noqa: BLE001
                 self.state = "expired"
                 self.error = f"{type(exc).__name__}: {scrub(exc)}"
-                self._record("keepAlive", None, {}, {"status": "FAILED", "error": self.error}, (time.monotonic() - started) * 1000)
+                self._record("keepAlive", None, {}, {"status": "FAILED", "error": self.error}, (time.monotonic() - started) * 1000, http_trail(self._client))
                 self.activity.record("betfair_session_expired", None, error=self.error)
                 log.error("betfair keepAlive failed: %s", self.error, extra={"event": "betfair_session_expired"})
             return self.view()
@@ -277,9 +330,9 @@ class BetfairSession:
                 started = time.monotonic()
                 try:
                     client.logout()
-                    self._record("logout", by, {}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000)
+                    self._record("logout", by, {}, {"status": "SUCCESS"}, (time.monotonic() - started) * 1000, http_trail(client))
                 except Exception as exc:  # noqa: BLE001
-                    self._record("logout", by, {}, {"status": "FAILED", "error": f"{type(exc).__name__}: {scrub(exc)}"}, (time.monotonic() - started) * 1000)
+                    self._record("logout", by, {}, {"status": "FAILED", "error": f"{type(exc).__name__}: {scrub(exc)}"}, (time.monotonic() - started) * 1000, http_trail(client))
             self.state = "logged_out"
             self.activity.record("betfair_logout", by)
             return self.view()
@@ -323,17 +376,17 @@ class BetfairSession:
                 )
             except Exception as exc:  # noqa: BLE001
                 err = f"{type(exc).__name__}: {scrub(exc)}"
-                self._record("listMarketCatalogue", by, request, {"status": "FAILED", "error": err}, (time.monotonic() - started) * 1000)
+                self._record("listMarketCatalogue", by, request, {"status": "FAILED", "error": err}, (time.monotonic() - started) * 1000, http_trail(self._client))
                 if "SESSION" in err.upper():
                     self.state = "expired"
                     self.error = err
                     self.activity.record("betfair_session_expired", by, error=err)
-                raise BetfairRefused(502, f"listMarketCatalogue failed: {err}") from exc
+                raise BetfairRefused(424, f"listMarketCatalogue failed: {err}") from exc
             self.calls += 1
             self.last_call_at = now_iso()
             markets = [simplify(m) for m in (raw or [])]
             fetched_at = now_iso()
-            self._record("listMarketCatalogue", by, request, {"status": "SUCCESS", "count": len(markets), "markets": raw}, (time.monotonic() - started) * 1000)
+            self._record("listMarketCatalogue", by, request, {"status": "SUCCESS", "count": len(markets), "markets": raw}, (time.monotonic() - started) * 1000, http_trail(self._client))
             self.activity.record("betfair_catalogue", by, date=key, **summarise(markets))
             self._catalogue[key] = (time.monotonic(), markets, fetched_at)
             return {"date": key, "from_cache": False, "fetched_at": fetched_at, "markets": list(markets)}

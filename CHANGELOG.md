@@ -2,6 +2,81 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.3] — 2026-11-02 — the first login's failure: cause, record, and the error's path
+
+### Why
+The first Betfair login, Charles's click on the page at 05:53 UTC on
+2 November 2026, failed. The server panel said "Betfair session login failed,
+not retried: APIError: None Params: None Exception: unhashable type: 'list'",
+then "The server could not do it: The origin web server returned an invalid or
+incomplete response to Cloudflare." Charles asked for the cause from the Cloud
+Run logs and the orders bucket, whether any request reached Betfair, why the
+page showed Cloudflare's words and not the server's JSON, a fix for all three,
+and a test that fails on the old behaviour. No login was attempted by the
+build agent.
+
+### Found
+1. **Cause.** `default_client_factory` passed the certificate and key to
+   betfairlightweight as `list(cert_files)`. betfairlightweight hands
+   `cert_files` to the requests library unchanged as `cert=`; requests 2.34.2
+   (the version the image build installed, from the build log) unpacks only a
+   tuple and otherwise puts the value into the key of its connection pool,
+   which must be hashable. A list is not: `TypeError: unhashable type: 'list'`
+   inside the client, wrapped by betfairlightweight as `APIError`. Charles's
+   guess was right; the point of failure is requests' connection-pool key, so
+   it happened before any connection to Betfair existed.
+2. **Nothing reached Betfair.** The one stored record,
+   `betfair/2026-11-02/1793598819237-ed8cf86a.json`, is the login, FAILED,
+   with that error, no HTTP status and no Betfair response; the Cloud Run log
+   shows the one POST, 1.76 s (the five Secret Manager reads and the local
+   failure), answered 502 with a 216-byte JSON body. The exception is raised
+   where the pool is keyed, before a socket; no bytes left the server. The
+   record could not say so on its own, which is fixed below.
+3. **Cloudflare's words.** The server answered a clean 502 JSON (Cloud Run
+   log). The Pages Function passed the 502 on. Cloudflare replaces an origin's
+   502 or 504 with its own error page (its documentation: "Cloudflare returns
+   a Cloudflare-branded HTTP 502 or 504 error when your origin web server
+   responds with a standard HTTP 502 bad gateway or 504 gateway timeout
+   error"), and for a request that asked for JSON that page is JSON with
+   `status`, `detail` and `error_name: origin_bad_gateway`. The page's helper
+   took that `detail` as the server's.
+
+### Fixed
+- `server/app/betfair.py`: the certificate pair goes as a tuple. Every record
+  under `betfair/<UTC date>/` now carries `http`: the trail of every send the
+  requests library attempted for that call (method, URL without its query,
+  status and time, or the error where no response came), from a
+  `RecordingSession` the client is built with; `null` where a client's session
+  keeps no trail. Never a body, never a header. A failed call to Betfair is
+  answered 424 (failed dependency), never 502.
+- `functions/api/[[path]].js`: no 502 or 504 leaves the Function. A failure
+  to reach the server is 503 in words; a 502 or 504 from Cloud Run's front
+  door is 503 with the upstream status named and its first 200 characters.
+- `src/api.js`: 424 shows the server's sentence as it is; any status without
+  its own sentence shows its number first, so a body that is not the server's
+  is seen for what it is.
+
+### Tests
+- `server/tests/test_betfair.py`: `default_client_factory` gives the client a
+  tuple and a `RecordingSession`, and the exact requests call that failed,
+  `get_connection_with_tls_context` (keys a pool, never connects), succeeds
+  with the tuple and raises `TypeError: unhashable` with the list, so the test
+  fails on the old code. The `RecordingSession` keeps the trail of a send that
+  answered and of one that raised, and never a token, username, password or
+  key. The login records carry the trail. 67 pytest cases.
+- `src/pages-function.test.js`: 503, never 502, when the server does not
+  answer; a 502 or 504 from upstream becomes 503 with the status named; 424
+  passes through. `src/api.test.js`: 424 and Cloudflare's 502 body. 105
+  vitest cases.
+
+### Not changed
+- No login attempted. The failed state stands on the live server until
+  Charles clears it (`betfair-reset`) and logs in once, after the deploy of
+  this commit replaces the instance.
+- `requests` is not pinned: it arrives as a dependency of betfairlightweight
+  and google-cloud-storage, 2.34.2 in the last build. The tuple is right for
+  every version; a pin is for Charles to approve if he wants one.
+
 ## [0.6.2] — 2026-11-02 — three texts off the page
 
 ### Removed

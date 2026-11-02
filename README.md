@@ -31,13 +31,13 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
-| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 104 tests (8 for the Pages Function, 9 for the page's calls to its server), run by every Pages build before `vite build` |
+| 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 105 tests (9 for the Pages Function, 9 for the page's calls to its server), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
 | v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2; 0.5.2 the Access values. The trigger `fb13-main` was created in region europe-west2 and run once by hand the same day: the first deploy, revision 00001 at 627ec3b, answers `/health` and `/ready`. Live, placing disabled, no Betfair call |
-| v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. Charles gave the word for the first login on 2 November; his click on the page is that login. The real 08:00 slip at 08:00 UK is the resolver's test |
+| v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
-| v1 5 | Tests from real data | Server tests written alongside each step: 65 cases, run by every Cloud Build before the image is built. The resolver's matching is tested against the first real catalogue once it is stored |
+| v1 5 | Tests from real data | Server tests written alongside each step: 67 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code. The resolver's matching is tested against the first real catalogue once it is stored |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -254,9 +254,20 @@ Charles's rules of 2 November 2026, as built:
 - **Every request and response is recorded**, append-only, in the orders
   bucket under `betfair/<UTC date>/`, with the time and the operator: login,
   keepAlive, logout, listMarketCatalogue (the full catalogue as Betfair sent
-  it). Never a secret: the session token, key, username and password are not
-  written anywhere, and any token-shaped run of characters in an error is
-  redacted before it is stored or logged.
+  it). From 0.6.3 each record also carries `http`, the trail of every send the
+  requests library attempted for that call (method, URL without its query,
+  status and time, or the error where no response came), so the record itself
+  says whether anything reached Betfair; `null` where the client's session
+  keeps no trail. Never a secret: the session token, key, username and
+  password are not written anywhere, and any token-shaped run of characters
+  in an error is redacted before it is stored or logged.
+- **A failed call to Betfair is answered 424** (failed dependency), never 502
+  or 504. Cloudflare replaces an origin's 502 and 504 with its own error page,
+  and when the request asked for JSON that page is JSON with a `detail` of its
+  own. That is how the first login's error reached the page on 2 November 2026
+  as "The origin web server returned an invalid or incomplete response to
+  Cloudflare" instead of the server's words. The server never answers 502 or
+  504; the Pages Function never passes one on (below).
 - **Read only.** The only market call is listMarketCatalogue for one London
   day's horse racing (event type 7), countries GB and IE, market type WIN, sorted
   first to start, with EVENT, MARKET_START_TIME and RUNNER_DESCRIPTION. No order
@@ -304,7 +315,7 @@ plus step 2's three actions and two content endpoints.
 | `GET /admin/events` | the same, live, server-sent events, five minutes a request | operator |
 | `GET /admin/incidents` | `[]` until the Incident FSU exists (CHI-POL-043) | operator |
 | `POST /admin/control/{kill,resume}` | the kill switch and its inverse; `{"reason": "..."}` optional; any other action 404 | operator |
-| `POST /admin/control/betfair-login` | log in once, with the certificate, on the Delayed key; 502 with the error if it fails, 409 thereafter until reset | operator |
+| `POST /admin/control/betfair-login` | log in once, with the certificate, on the Delayed key; 424 with the error if it fails, 409 thereafter until reset | operator |
 | `POST /admin/control/betfair-logout` | give the session back | operator |
 | `POST /admin/control/betfair-reset` | clear a failed, expired or logged-out state; logs nothing in | operator |
 | `GET /betfair/markets?date=YYYY-MM-DD` | the day's GB and IE win markets with runners and a summary; London today by default; 409 when not logged in | operator |
@@ -406,7 +417,12 @@ lets through, and returns the answer. Without that header it answers 401 and
 the server is never called. The origin is Cloud Run's fixed URL for the
 service, `https://fb13-trade-slip-api-991649774709.europe-west2.run.app`; the
 Pages variable `FB13_API_ORIGIN` overrides it should the service move. Nothing
-to set today. Pages picks the `functions/` directory up on its own.
+to set today. Pages picks the `functions/` directory up on its own. No 502 or
+504 leaves the Function, because Cloudflare would replace it with its own
+error page on the way to the browser: a failure to reach the server is
+answered 503 in words, and a 502 or 504 from Cloud Run's front door is
+answered 503 with the upstream status named (0.6.3, from the first login's
+failure).
 
 **The server.** Cloud Run, `fb13-trade-slip-api`, `europe-west2` (London:
 Betfair blocks South African addresses), project `chiops`, service account
