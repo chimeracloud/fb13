@@ -1,32 +1,30 @@
 # FB13 — status
 
 **Unit:** FB13 Trade slip, version 1 (step 1 of 5). **Written:** 2026-11-02,
-about 02:20 UTC, by the build agent.
+about 02:30 UTC, by the build agent.
 
 **State:** version 1 step 1 is pushed as 0.5.0 (bb4e8cc). The Pages build for
 it is Charles's to report; it runs 94 tests and deploys the Pages Function.
 The first settings version is in the config bucket with the two operators
-Charles named. 0.5.1 is committed and not pushed: minimum instances zero until
-step 2, and the notes brought up to date. **Blocked on the Cloud Build
+Charles named. 0.5.1 and 0.5.2 are committed and not pushed: minimum instances zero until
+step 2, the notes brought up to date, and the Access team domain and audience
+set in `cloudbuild.yaml` from Charles's message. **Blocked on the Cloud Build
 trigger:** `gcloud builds triggers create github` for `chimeracloud/fb13`
 answered `FAILED_PRECONDITION: Repository mapping does not exist`, and no
 mapping for the repository exists in `chiops`, first or second generation, in
 any region checked. The server is not deployed; the first build runs once the
 trigger exists and a push touches `server/**` or `cloudbuild.yaml`, which
-0.5.1 does.
+0.5.1 and 0.5.2 do.
 
 **Waiting for (from Charles), since 2 November 2026:**
 - The repository `chimeracloud/fb13` connected in Cloud Build, project
   `chiops`, the first-generation GitHub App route the other `-main` triggers
   use (Cloud Build, Triggers, region global, Connect repository). Then the
   build agent creates `fb13-main` at once.
-- The Access team domain and the application's audience tag, for
-  `cloudbuild.yaml`. The login redirect names the team `chimera-cape`;
-  Charles confirms both values.
-- The word to push 0.5.1.
+- The word to push 0.5.1 and 0.5.2 (3125755 and the commit after it).
 - The Pages build result for bb4e8cc.
 
-**Last did:** 0.5.1 committed; first settings version written; bb4e8cc pushed;
+**Last did:** 0.5.2 committed (the Access values); 0.5.1 committed; first settings version written; bb4e8cc pushed;
 trigger creation attempted and refused. All 2026-11-02.
 
 **Found and reported, not acted on:**

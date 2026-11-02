@@ -2,6 +2,17 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.5.2] — 2026-11-02 — the Access values
+
+### Changed
+- `cloudbuild.yaml`: `_CF_ACCESS_TEAM_DOMAIN` is
+  `chimera-cape.cloudflareaccess.com` and `_CF_ACCESS_AUD` is
+  `3f42e55e9c5fa60795f282b1777bf1f77f3a5755dbc67db86da6eef0e0ccfac9`, from
+  Charles's message of 2 November 2026, matching what the page's login redirect
+  showed from Cape Town that day. Neither is a secret. The server will accept
+  only a token issued by that team for that application.
+- README: the values are set; the risk note reads accordingly.
+
 ## [0.5.1] — 2026-11-02 — minimum instances zero; the first settings version
 
 ### Changed

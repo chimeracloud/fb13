@@ -9,9 +9,9 @@
 #
 # Access: CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD identify the Cloudflare
 # Access application in front of fb13.chimerasportstrading.com. Neither is a
-# secret (the audience is in every token). Empty, the server refuses every
-# request but /health and /ready. Charles supplies them; they are then set
-# here, in the repository, not in the console.
+# secret (the audience is in every token and in the login redirect). Empty,
+# the server refuses every request but /health and /ready. Set here, in the
+# repository and not in the console, from Charles's message of 2 Nov 2026.
 
 steps:
   - id: test
@@ -75,8 +75,8 @@ steps:
       - --labels=app=fb13,unit=fb13
 
 substitutions:
-  _CF_ACCESS_TEAM_DOMAIN: ''
-  _CF_ACCESS_AUD: ''
+  _CF_ACCESS_TEAM_DOMAIN: 'chimera-cape.cloudflareaccess.com'
+  _CF_ACCESS_AUD: '3f42e55e9c5fa60795f282b1777bf1f77f3a5755dbc67db86da6eef0e0ccfac9'
 
 options:
   logging: CLOUD_LOGGING_ONLY

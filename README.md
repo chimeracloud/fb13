@@ -182,8 +182,13 @@ No token, 401. Unconfigured, 503. Not an operator, 403. Only `/health` and
 is the gate (Charles's ruling 1).
 
 The server needs two values from the Access application: the team domain and
-the application's audience tag. Both go into `cloudbuild.yaml` as
-`_CF_ACCESS_TEAM_DOMAIN` and `_CF_ACCESS_AUD`. Charles supplies them.
+the application's audience tag. Both sit in `cloudbuild.yaml` as
+`_CF_ACCESS_TEAM_DOMAIN` and `_CF_ACCESS_AUD`, set from Charles's message of
+2 November 2026: team `chimera-cape.cloudflareaccess.com`, audience
+`3f42e55e9c5fa60795f282b1777bf1f77f3a5755dbc67db86da6eef0e0ccfac9`. Neither
+is a secret: the audience is in every token and in the login redirect, which
+is where the same two values were seen from Cape Town that day. The server
+accepts only a token issued by that team for that application.
 
 ### The stored settings
 
@@ -418,9 +423,10 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   the chimera-cape team's login, where at 01:24 UTC the same request had been
   answered 200 with no redirect. The stored `page_access_confirmed` stays
   false until Charles writes it true; real mode needs it.
-- **The Access team domain and audience are not yet set in `cloudbuild.yaml`.**
-  Charles supplies them. Until they are set and deployed, the server refuses
-  everything but `/health` and `/ready` with 503.
+- **The Access values are set but not yet deployed.** Until the first build
+  runs there is no server at all. Once deployed, a wrong value would show as
+  401 on every call through the page, and `/ready` reports whether sign-in is
+  configured.
 - **The operator list holds two addresses**, from the first settings version
   written by hand at Charles's word on 2 November 2026. Others are added by a
   new version, never by editing.
