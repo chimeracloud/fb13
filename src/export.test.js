@@ -76,7 +76,7 @@ describe('the CSV', () => {
     const rows = entriesToCsv(entries, ls).slice(1).split('\r\n');
     expect(rows[1]).toBe(
       `2026-10-30,08:00,11:35 Newmarket,Dove Tale,placed,real,SI,code,back,2.88,50,unknown,13:34,app,"A1,""x""",` +
-        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,"2.88 BetMGM, SI",2.88,"3.15\n07:52 API",2.74 (13% under),£240,,${entries[0].id},${dove.id}`,
+        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,"2.88 BetMGM, SI",2.88,"3.15\n07:52 API",2.74 (13% under),£240,,${entries[0].id},${dove.id},seven,,,,,,,,`,
     );
   });
 
@@ -85,7 +85,7 @@ describe('the CSV', () => {
     const rows = entriesToCsv(entries, ls).slice(1).split('\r\n');
     expect(rows[2]).toBe(
       `2026-10-30,08:00,15:20 Uttoxeter,No Hard Feelings,not_placed,,,,,,,,,,,` +
-        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,no price read,–,"–\n07:52 API",–,£140,,${entries[1].id},${feelings.id}`,
+        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,no price read,–,"–\n07:52 API",–,£140,,${entries[1].id},${feelings.id},seven,,,,,,,,`,
     );
   });
 
@@ -105,7 +105,7 @@ describe('the CSV', () => {
     const rows = entriesToCsv([orphan], ls).slice(1).split('\r\n');
     expect(rows[1]).toBe(
       `2026-10-30,08:00,,,placed,real,SI,code,back,2.88,50,unknown,13:34,app,"A1,""x""",` +
-        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,,,,,,line not on this page,en_orphan,ln_gone`,
+        `2026-10-30 13:34,2026-10-30T13:34:00.000Z,,,,,,line not on this page,en_orphan,ln_gone,,,,,,,,,`,
     );
   });
 

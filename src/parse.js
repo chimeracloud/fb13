@@ -284,10 +284,14 @@ export function parseHtmlSlip(html) {
   let { byHeader } = found;
   let layout = found.layout || 'seven';
   let mapped = byHeader ? 'header' : 'position';
-  if (byHeader && !COLUMNS.every((col) => headers.includes(col.header)) && headers.length === COLUMNS_SIX.length) {
-    // A six column header naming race and horse: the new layout. Its other
-    // header texts are not assumed to mean anything; the cells are taken in
-    // order, and the header texts are kept in the note for a person to see.
+  const knownHeaders = new Set(COLUMNS.map((col) => col.header));
+  if (byHeader && headers.length === COLUMNS_SIX.length && headers.some((h) => !knownHeaders.has(h))) {
+    // A six column header naming race and horse and at least one column the
+    // seven-cell layout does not have: the new layout. Its header texts are not
+    // assumed to mean anything; the cells are taken in order, and the header
+    // texts are kept in the note for a person to see. A six column header made
+    // only of seven-cell names is a seven-cell table missing a column, flagged
+    // as before.
     layout = 'six';
     byHeader = false;
     mapped = 'position';

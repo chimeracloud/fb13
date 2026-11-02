@@ -1,13 +1,18 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 08:27 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 2 of 5). **Written:** 2026-11-02, 08:53 UTC, by the
 build agent, from the clock.
 
 **State:** the page fix for the six-cell layout (0.6.5, a9abada) was pushed
 alone on Charles's word, and its Pages build failed at `npm test`: the new
 export test split a CSV row on commas, and the decision cell holds commas
-inside its quotes. The page stayed at 0.6.4. 0.6.6 fixes the test, page only,
-on top of a9abada, committed locally, not pushed. Charles's paste
+inside its quotes. The page stayed at 0.6.4. 0.6.6 (f4c534b) fixed that test and
+was pushed alone; its build failed too: three export tests compare whole
+CSV rows as literals and the nine new columns changed every row, and the
+six-column header rule caught the old missing-column test. 0.6.7 fixes
+those, page only, on top of f4c534b, committed locally, not pushed. The
+build agent cannot read Cloudflare's build log; the causes are read from
+the tests. Charles's paste
 of 07:40 UTC on 2 November 2026 was refused by 0.6.4, all 22 rows, correctly;
 the real diagnostics are the fourth fixture. Price A and Price B are labels,
 not meanings, until Charles confirms with Mark; no order is built from such a

@@ -2,6 +2,20 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.6.7] — 2026-11-02 — the 0.6.6 Pages build failed too: three more tests
+
+### Fixed
+- The Pages build of f4c534b (0.6.6) failed at `npm test` as well. Read from
+  the tests themselves, since Cloudflare's log is not open to the build agent:
+  three export tests compare whole CSV rows as literals, and 0.6.5 appended
+  nine columns to every row; and the six-column header rule of 0.6.5 caught
+  the old test for a seven-cell table missing a column, because that header
+  has six known names. The literals now carry the nine columns; a six-column
+  header is read as the six-cell layout only when it names at least one column
+  the seven-cell layout does not have. `src/parse.js` and the tests; the page's
+  reading of the real six-cell paste is unchanged. 0.6.5 and 0.6.6 never went
+  live; the page stayed at 0.6.4. Page only.
+
 ## [0.6.6] — 2026-11-02 — the 0.6.5 Pages build failed on a test
 
 ### Fixed

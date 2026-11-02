@@ -29,7 +29,7 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
-| B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture. The 0.6.5 Pages build failed on a test that split a CSV row on commas; 0.6.6 fixes the test |
+| B2 | The six-cell layout of the 08:00 slip, alongside the seven-cell one | Built 2 November 2026, 0.6.5, from the real paste of 07:40 UTC (22 rows, all refused by 0.6.4 as "6 cells"); kept as the fourth real fixture. The 0.6.5 and 0.6.6 Pages builds failed on tests (a CSV row split on commas; three CSV rows compared as literals without the nine new columns; a six-column header rule that caught the missing-column test); 0.6.7 fixes them |
 | 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
 | 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
 | 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 112 tests (9 for the Pages Function, 9 for the page's calls to its server, 6 for the six-cell layout from the fourth real paste), run by every Pages build before `vite build` |
@@ -163,7 +163,9 @@ price, Best BOG, Betfair, Lay target, Betfair cap.
 Seven-cell columns are matched by header text when a header row is present,
 so their order does not matter. Without a header they are taken in the order
 above. Six-cell rows are taken in order; a six-column header naming race and
-horse is kept out of the rows and shown in the note. The HTML table is read
+horse and at least one column the seven-cell layout does not have is kept out
+of the rows and shown in the note (a six-column header made only of seven-cell
+names is a seven-cell table missing a column, flagged as before). The HTML table is read
 first, then tab-separated text (one line of six or seven cells, or the
 seven-cell pair of lines), then the email's own untabbed text (seven-cell
 only). A row with a different number of cells, a table missing one of the seven
