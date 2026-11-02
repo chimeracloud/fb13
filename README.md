@@ -38,7 +38,7 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Built 2 November 2026, 0.6.0: the Betfair session on the Delayed key (an operator logs in from the page; nothing logs in by itself), the day's GB and IE win markets, the resolver, the server panel on the page. The first login, Charles's click at 05:53 UTC on 2 November, failed inside the client before anything was sent (the certificate pair passed as a list); 0.6.3 fixes it and the way the error reached the page. Charles clears the session state and logs in once after the deploy. The real 08:00 slip at 08:00 UK is the resolver's test |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Built 2 November 2026, 0.7.0: the builder with every refusal named, the paper ledger, the real path behind the stored mode and the kill switch, the test order (BACK 2.00 at 1000, placed and cancelled, real mode only with the sentence typed). No order sent. Real mode stays off until Charles writes the settings version |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
-| v1 5 | Tests from real data | Server tests written alongside each step: 95 cases, run by every Cloud Build before the image is built; two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver and the order builder are tested against the first real catalogue, 2 November 2026 (`server/tests/fixtures/catalogue-2026-11-02.json`): all 30 markets resolve from their own time, venue and first runner |
+| v1 5 | Tests from real data | Server tests written alongside each step: 96 cases, run by every Cloud Build before the image is built, and before any push in a one-off tests-only Cloud Build (the first such run, 2 November 2026, found a session-expiry bug and two stale tests: 0.7.3); two of them reproduce the first login's failure of 2 November 2026 and fail on the old code, one the record order within a millisecond that failed the 0.6.3 build. The resolver and the order builder are tested against the first real catalogue, 2 November 2026 (`server/tests/fixtures/catalogue-2026-11-02.json`): all 30 markets resolve from their own time, venue and first runner |
 
 Current state in detail: [docs/status/latest.md](docs/status/latest.md).
 
@@ -511,7 +511,10 @@ Pages settings:
 
 The build runs the tests first (`vitest run`), so a failing test fails the
 deploy. Pages installs dependencies itself before the build command. Nothing is
-built or tested on Charles's machine. Pages also hands the build the commit it
+built or tested on Charles's machine. Before a push, the same suite runs on the
+exact commit in a one-off, tests-only Cloud Build (Node 22, `npm install` and
+`npm test`, no deploy: see Where it runs), so a failing test is found there and
+not in a Pages build, whose log the build agent cannot read. Pages also hands the build the commit it
 is building as `CF_PAGES_COMMIT_SHA`; `vite.config.js` stamps its first seven
 characters into the page. Nothing to set.
 
@@ -537,7 +540,13 @@ Betfair blocks South African addresses), project `chiops`, service account
 europe-west2, where the repository is connected). The tests run first, in the
 cloud, on Python 3.12; the image is built only when they pass; the deploy
 carries every flag the service must have, so the live service always matches
-the file. Read back after the first deploy on 2 November 2026: every flag as
+the file. Before a push, the same test step runs alone on the exact commit in a
+one-off, tests-only Cloud Build: a `git archive` of the commit, submitted with
+an inline config holding the test step of `cloudbuild.yaml` word for word and
+nothing else (no build, push or deploy step, no trigger; the staging bucket
+`chiops_cloudbuild` already existed). The log is read with `gcloud builds log
+<id> --region=europe-west2` once the build ends. The first such run, 2 November
+2026, found a session-expiry bug and two stale tests (0.7.3). Read back after the first deploy on 2 November 2026: every flag as
 the file, plus two platform defaults the file does not set, startup CPU boost
 on the revision and a service-level maximum of 100 instances, which the
 revision's maximum of 1 governs. Recorded, not changed. One instance, always on, CPU always allocated

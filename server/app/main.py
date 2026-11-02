@@ -29,8 +29,14 @@ Step 2 (read only, 2 November 2026). Nothing logs in by itself: an operator asks
   GET  /betfair/markets?date=          the day's GB and IE win markets with runners (listMarketCatalogue)
   POST /resolve                        {"date": "...", "lines": [{"id", "race", "horse"}]} -> market and runner, or a flag
 
-No order call exists in this version. Cancelling open orders is a separate,
-deliberate call and arrives in step 3.
+Step 3 (paper first, 2 November 2026). An order call is sent only in real mode;
+paper builds the exact order, records it and sends nothing.
+  POST /orders/build            the order a Place would send, with every reason it would be refused
+  POST /orders/place            place it (paper: record only), with the build's ticket
+  POST /orders/cancel           cancel one order by its reference: a separate, deliberate call
+  GET  /orders?date=            the day's ledger
+  GET  /orders/current?date=    the open orders (paper: the ledger; real: listCurrentOrders)
+  POST /orders/test             the £2 test order, real mode only, the sentence typed: placed, seen, cancelled, gone
 """
 
 from __future__ import annotations

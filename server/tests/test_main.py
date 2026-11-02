@@ -137,7 +137,7 @@ def test_stats_info_metrics_status(client, operator):
     assert metrics.status_code == 200 and "fb13_requests_total" in metrics.text and "fb13_placing_enabled" in metrics.text
     status = client.get("/status", headers=operator).text
     assert status.startswith("FB13 trade slip API, version ")
-    assert "mode: paper" in status and "DISABLED" in status and "no order call exists" in status
+    assert "mode: paper" in status and "DISABLED" in status and "0 order call(s) (sent only in real mode; paper sends nothing)" in status
 
 
 def test_events_stream_connects_and_ends(client, operator, monkeypatch):

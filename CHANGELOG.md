@@ -2,6 +2,36 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.7.3] — 2026-11-02 — the server suite run in the cloud before any push: one bug, two stale tests
+
+### Fixed
+- `server/app/betfair.py`: a Betfair error naming the session
+  (INVALID_SESSION_INFORMATION) never marked the session expired. The check
+  ran on the scrubbed text, and the scrubber had redacted the 27-character
+  error code itself as token-shaped. The check now reads the raw error. The
+  scrubber keeps a run of capitals and underscores (Betfair's error codes)
+  and still redacts a token beside it, so the stored record of a failed call
+  says what went wrong instead of "[redacted] token=[redacted]". Found by
+  `test_order_calls_need_a_session_send_the_exact_body_and_are_recorded` in
+  the first cloud run of the step 3 suite; the test now also checks the record.
+- Two tests said what the code no longer says: `test_stats_info_metrics_status`
+  asserted the step 2 status line ("no order call exists"), replaced in 0.7.0
+  by the order-call count; `test_build_names_every_reason_it_would_refuse`
+  expected one refusal for a stake of 50, where the builder names both the
+  per-order cap and the per-day cap. The tests now assert what the code does;
+  the builder's behaviour is unchanged.
+
+### Changed
+- Tests run before a push in a one-off, tests-only Cloud Build (Charles,
+  2 November 2026): a `git archive` of the exact commit, an inline config with
+  the single test step, no trigger, no deploy, no new resource. The page suite
+  of ec4c6d2 (0.6.7): 112 passed on node v22.23.4 (build 3eea2314). The page
+  suite on the tip: 116 passed (26ad6ee9). The server suite on 3dd34e6: 3
+  failed, 93 passed (2a7447ab), hence this version. 96 pytest, no test added.
+- The module docstring of `server/app/main.py` lists the step 3 endpoints in
+  place of "No order call exists in this version". A missing blank line before
+  the 0.6.7 heading in this file is restored.
+
 ## [0.7.2] — 2026-11-02 — a line without a Betfair cap says so
 
 ### Changed
@@ -121,6 +151,7 @@ address replaced by "operator".
   settings version. The page's Place button per line is step 4.
 - `docs/betfair-master/` (betfairlightweight 2.24.0, put there by Charles for
   the build agent to read) is ignored by git and never committed.
+
 ## [0.6.7] — 2026-11-02 — the 0.6.6 Pages build failed too: three more tests
 
 ### Fixed

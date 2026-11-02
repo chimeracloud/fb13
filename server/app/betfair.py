@@ -66,6 +66,7 @@ CATALOGUE_FRESH_S = 10 * 60
 RECORD_PREFIX = "betfair/"
 
 _TOKENISH = re.compile(r"[A-Za-z0-9+/_\-]{24,}")
+_ERROR_CODE = re.compile(r"^[A-Z_]+$")  # INVALID_SESSION_INFORMATION and the like: capitals and underscores only
 
 
 class BetfairRefused(Exception):
@@ -80,8 +81,12 @@ def now_iso() -> str:
 
 
 def scrub(text: Any) -> str:
-    """Any token-shaped run of 24 or more characters is replaced before an error is kept."""
-    return _TOKENISH.sub("[redacted]", str(text))
+    """Any token-shaped run of 24 or more characters is replaced before an error is kept.
+
+    A run of capitals and underscores only is kept: that is how Betfair names an error
+    (INVALID_SESSION_INFORMATION is 27 characters), and the record must say what went wrong.
+    """
+    return _TOKENISH.sub(lambda m: m.group(0) if _ERROR_CODE.match(m.group(0)) else "[redacted]", str(text))
 
 
 def london_day_window(day: date) -> tuple[datetime, datetime]:
@@ -383,7 +388,7 @@ class BetfairSession:
             except Exception as exc:  # noqa: BLE001
                 err = f"{type(exc).__name__}: {scrub(exc)}"
                 self._record("listMarketCatalogue", by, request, {"status": "FAILED", "error": err}, (time.monotonic() - started) * 1000, http_trail(self._client))
-                if "SESSION" in err.upper():
+                if "SESSION" in str(exc).upper():  # the raw text: scrub may have redacted the code itself
                     self.state = "expired"
                     self.error = err
                     self.activity.record("betfair_session_expired", by, error=err)
@@ -410,7 +415,7 @@ class BetfairSession:
             except Exception as exc:  # noqa: BLE001
                 err = f"{type(exc).__name__}: {scrub(exc)}"
                 self._record(operation, by, request, {"status": "FAILED", "error": err}, (time.monotonic() - started) * 1000, http_trail(self._client))
-                if "SESSION" in err.upper():
+                if "SESSION" in str(exc).upper():  # the raw text: scrub may have redacted the code itself
                     self.state = "expired"
                     self.error = err
                     self.activity.record("betfair_session_expired", by, error=err)

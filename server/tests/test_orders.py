@@ -166,7 +166,10 @@ def test_build_moves_the_target_down_never_up():
 def test_build_names_every_reason_it_would_refuse():
     orders, *_ = make(PAPER)
     o = orders.build(line(stake="50"), DAY, markets(), NOW)
-    assert o["status"] == "refused" and o["refusals"] == ["liability 35.78 is above the per-order cap of 5.00 at risk"]
+    assert o["status"] == "refused" and o["refusals"] == [  # both caps are broken, and both are named
+        "liability 35.78 is above the per-order cap of 5.00 at risk",
+        "the day's paper money at risk would be 35.78, above the per-day cap of 10.00",
+    ]
     assert o["size"] == "47.71" and o["ticket"] is not None  # still shown, so the person sees what was refused
     o = orders.build(line(horse="Hard Stair"), DAY, markets(), NOW)
     assert o["status"] == "refused" and o["refusals"][0].startswith("not resolved: runner not in the market 1.264841544")

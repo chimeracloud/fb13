@@ -292,7 +292,8 @@ def test_order_calls_need_a_session_send_the_exact_body_and_are_recorded():
         s.place_orders(request, "x@y.z")
     assert exc.value.status == 424 and "AbCdEf" not in exc.value.detail
     assert s.state == "expired"  # a session error marks the session expired, as a failed keepAlive does
-    assert store.get(store.names(RECORD_PREFIX)[-1])["response"]["status"] == "FAILED"
+    last = store.get(store.names(RECORD_PREFIX)[-1])["response"]
+    assert last["status"] == "FAILED" and last["error"] == "RuntimeError: INVALID_SESSION_INFORMATION token=[redacted]"
 
 
 def test_time_helpers_and_scrub():
@@ -304,6 +305,8 @@ def test_time_helpers_and_scrub():
     assert london_hhmm("2026-10-24T13:40:00.000Z") == "14:40"
     assert scrub("short words only") == "short words only"
     assert scrub("x=AbCdEfGhIjKlMnOpQrStUvWxYz0123 y") == "x=[redacted] y"
+    # Betfair's error codes are 24 characters or more, capitals and underscores: kept, so the record says why
+    assert scrub("INVALID_SESSION_INFORMATION token=AbCdEfGhIjKlMnOpQrStUvWxYz0123") == "INVALID_SESSION_INFORMATION token=[redacted]"
 
 
 def test_simplify_and_summarise_keep_what_the_resolver_needs():
