@@ -29,11 +29,11 @@ shell. **It makes no Betfair call.** See "Version 1: the server" below.
 | 2a | Diagnostics: what was pasted | Pushed 30 October 2026, 0.2.1, for the first real paste from Gmail, which read nothing |
 | 3 | Placed and Not placed, the form, counters, history | Pushed 30 October 2026, 0.3.0 |
 | B | Parsers for the real browser copy: seven cells by position, tab separated text | Pushed 30 October 2026, 0.3.1; checked against three real pastes: 30 October (15:13 and 15:48 UK, the 10:00 slip) and 1 November 2026 (22:42 UK, the 08:00 slip) |
-| 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0 |
-| 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1 |
+| 4 | Export, worksheet notice | Pushed 2 November 2026, 0.4.0; Pages build passed |
+| 4a | The version and the commit in the footer and on the diagnostics | Pushed 2 November 2026, 0.4.1; Pages build passed; live |
 | 5 | Tests from the real fixtures run in the Pages build | Written alongside each step: 94 tests (8 of them for the Pages Function), run by every Pages build before `vite build` |
 | v1 0 | Step 0 message: the plan, the secret names, the hostname, the questions | Sent 2 November 2026; Charles's rulings received the same day |
-| v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Committed 2 November 2026, 0.5.0. Deploy waits for Charles to connect the repository in Cloud Build and for the trigger `fb13-main` |
+| v1 1 | The server shell: settings, caps, kill switch, the thirteen admin and observability endpoints, the Pages Function, the Cloud Build pipeline | Pushed 2 November 2026, 0.5.0; the first settings version written the same day; 0.5.1 sets minimum instances to zero until step 2. The trigger `fb13-main` could not yet be created: Cloud Build has no repository mapping for `chimeracloud/fb13` (see Cloud resources). The first deploy runs once the trigger exists and a push touches the server |
 | v1 2 | Read only: login and listMarketCatalogue to resolve slip lines | Not started. The first login waits for Charles's word |
 | v1 3 | The paper order builder and its record; placing, cancelling, listCurrentOrders, still paper | Not started |
 | v1 4 | The page: Place button, confirm panel, order status, Place all with confirmation | Not started |
@@ -224,7 +224,9 @@ Charles (or the build agent at his word) writes a new object with a name later
 than the newest, for example with `gcloud storage cp` from a local file to
 `gs://chiops-fb13-config/settings/v/<13-digit-ms>-<8-hex>.json`, carrying the
 full `values` object and `"updated_by": "charles"`. The server picks it up
-within five seconds. Nothing is deleted or overwritten.
+within five seconds. Nothing is deleted or overwritten. The first version was
+written this way on 2 November 2026: paper, placing disabled, page access not
+confirmed, the default caps, and the two operators Charles named.
 
 ### Endpoints
 
@@ -310,7 +312,7 @@ else in the project was changed.
 | Buckets | `chiops-fb13-config`, `chiops-fb13-orders` (europe-west2) |
 | Artifact Registry | `europe-west2-docker.pkg.dev/chiops/fb13`, image `fb13-trade-slip-api` |
 | Cloud Run service | `fb13-trade-slip-api`, europe-west2 (created by the first build) |
-| Cloud Build trigger | `fb13-main`: `chimeracloud/fb13`, `^main$`, `cloudbuild.yaml`, filtered to `server/**` and `cloudbuild.yaml`; created with `--build-config` once Charles has connected the repository |
+| Cloud Build trigger | `fb13-main`: `chimeracloud/fb13`, `^main$`, `cloudbuild.yaml`, filtered to `server/**` and `cloudbuild.yaml`, on the default compute service account like the other `-main` triggers. **Not yet created.** On 2 November 2026 `gcloud builds triggers create github` answered `FAILED_PRECONDITION: Repository mapping does not exist`, and no mapping for `chimeracloud/fb13`, first or second generation, was found in `chiops` in any region. It is created with `--build-config` as soon as the repository is connected |
 
 ## Where it runs
 
@@ -350,9 +352,10 @@ Betfair blocks South African addresses), project `chiops`, service account
 `main` that touches `server/**` or that file (trigger `fb13-main`). The tests
 run first, in the cloud, on Python 3.12; the image is built only when they
 pass; the deploy carries every flag the service must have, so the live service
-always matches the file. One instance, minimum and maximum, so that from step
-2 there is one Betfair session and an order can never be built twice by two
-instances. Its invoker IAM check is off: the Access token, verified on every
+always matches the file. At most one instance, so an order can never be built
+twice by two instances; minimum zero until step 2, when the question of one
+standing Betfair session is revisited (Charles, 2 November 2026). Its invoker
+IAM check is off: the Access token, verified on every
 request, is the gate (Charles, 2 November 2026).
 
 ## Dependencies
@@ -410,20 +413,22 @@ on the page. No lock file yet (the same decision as the page, 30 October 2026).
   on an iPhone has not yet been tried and may hand the page something else.
   The "What was pasted" section will show it. Flagged rows are shown raw,
   never guessed.
-- **Cloudflare Access was not covering the page at 01:24 UTC on 2 November
-  2026**: `https://fb13.chimerasportstrading.com/` answered 200 to a plain
-  request from Cape Town with no redirect to a login. Charles said so on
-  1 November. Until Access covers the page, the Pages Function receives no
-  token and refuses every `/api/*` call, and real mode stays off by rule.
-- **The Access team domain and audience are not yet known to the server.**
-  Until Charles supplies them and they are set in `cloudbuild.yaml`, the server
-  refuses everything but `/health` and `/ready` with 503.
-- **The operator list starts empty.** Nobody can sign in until Charles names
-  the operators' emails and the first settings version is written.
-- **One always-on instance costs money** (min-instances 1, 1 CPU, 512 MiB,
-  CPU throttled between requests). The reason is one Betfair session from step
-  2; Charles can set it to 0 in `cloudbuild.yaml` at the cost of a cold start
-  and a fresh login each time.
+- **Cloudflare Access covers the page since 2 November 2026.** Charles checked
+  it; a plain request from Cape Town at 02:02 UTC that day was redirected to
+  the chimera-cape team's login, where at 01:24 UTC the same request had been
+  answered 200 with no redirect. The stored `page_access_confirmed` stays
+  false until Charles writes it true; real mode needs it.
+- **The Access team domain and audience are not yet set in `cloudbuild.yaml`.**
+  Charles supplies them. Until they are set and deployed, the server refuses
+  everything but `/health` and `/ready` with 503.
+- **The operator list holds two addresses**, from the first settings version
+  written by hand at Charles's word on 2 November 2026. Others are added by a
+  new version, never by editing.
+- **Minimum instances zero until step 2** (Charles, 2 November 2026): the
+  first call after idleness waits for a cold start of a few seconds, and from
+  step 2 each cold start would mean a fresh Betfair login, which is why the
+  setting is revisited then. Maximum one, so two instances can never build
+  the same order.
 - **The Delayed key is shared.** fsu1b-sa may also read `betfair-app-key-delayed`.
   FB13 keeps its own login session and never borrows another's, but Betfair
   may still treat two sessions on one key as it did on 17 May, 31 July and 11

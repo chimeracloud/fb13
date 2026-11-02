@@ -2,6 +2,38 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.5.1] — 2026-11-02 — minimum instances zero; the first settings version
+
+### Changed
+- `cloudbuild.yaml`: `--min-instances=0`. Charles, 2 November 2026: maximum
+  one instance, minimum zero until step 2, when it is revisited. Maximum stays
+  one so an order can never be built twice by two instances.
+- README: Access covers the page since 2 November (Charles checked; a plain
+  request from Cape Town at 02:02 UTC was redirected to the chimera-cape
+  team's login); the first settings version exists; the Pages builds for
+  0.4.0 and 0.4.1 passed and 0.4.1 is live; the trigger is not yet created.
+
+### Done in the cloud, 2 November 2026
+- Trigger `fb13-main`: creation attempted after bb4e8cc was pushed (so that
+  push could fire no build with the old minimum) and refused:
+  `FAILED_PRECONDITION: Repository mapping does not exist`. No mapping for
+  `chimeracloud/fb13` exists in `chiops`, first or second generation, in any
+  region checked; every existing trigger uses the first-generation GitHub App
+  mapping. Waits for the repository to be connected, then created with
+  `--build-config=cloudbuild.yaml`, branch `^main$`, filtered to `server/**`
+  and `cloudbuild.yaml`, on the default compute service account. Nothing was
+  enabled or changed in the project while looking.
+- The first settings version written by hand to
+  `gs://chiops-fb13-config/settings/v/`: paper, placing disabled, page access
+  not confirmed, the default caps, operators charles@chimerasportstrading.com
+  and cloud@chimerasportstrading.com, at Charles's word. `page_access_confirmed`
+  left false: Charles's word changes it.
+
+### Approved by Charles, 2 November 2026
+- The four decisions of 0.5.0 (placing starts disabled; create-and-read bucket
+  roles; httpx test-only; one instance at most), with the minimum changed to
+  zero.
+
 ## [0.5.0] — 2026-11-02 — version 1, step 1: the server shell
 
 ### Why

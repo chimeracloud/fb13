@@ -54,9 +54,10 @@ steps:
       - --region=europe-west2
       - --platform=managed
       - --service-account=fb13-sa@chiops.iam.gserviceaccount.com
-      # One instance, so that from step 2 there is one Betfair session, never two
-      # on one login; and so an order can never be built twice by two instances.
-      - --min-instances=1
+      # At most one instance, so an order can never be built twice by two
+      # instances. Minimum zero until step 2 (Charles, 2 Nov 2026), when the
+      # question of one standing Betfair session is revisited.
+      - --min-instances=0
       - --max-instances=1
       - --cpu=1
       - --memory=512Mi
