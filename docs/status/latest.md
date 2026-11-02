@@ -1,38 +1,42 @@
 # FB13 — status
 
-**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 13:21 UTC, by the
+**Unit:** FB13 Trade slip, version 1 (step 3 of 5). **Written:** 2026-11-02, 13:48 UTC, by the
 build agent, from the clock.
 
-**State:** version 0.7.3 live on both sides (server revision
-fb13-trade-slip-api-00005-dhq, deployed 13:05:45 UTC; page bundle 0.7.3,
-dd7ebe3). Charles confirmed that the 13:06:41 UTC login and the 13:06:46 UTC
-markets read were his clicks, and gave the go for real mode and the £2 test
-order, on the 20:30 Wolverhampton (market 1.264841699, 6f Hcap, 13 runners in
-his catalogue read). The config bucket holds exactly one settings version,
-`settings/v/1793584951000-5d98ec34.json` (the seed of 02:02 UTC: paper,
-placing disabled, access not confirmed, caps 5/10, the two operators); no
-kill, resume or PUT /admin/config has written another. The build agent gave
-Charles the settings command with `previous` set to that object (the same
-object his earlier command of 07:38 UTC named) and the page steps. Mode is
-still paper, placing disabled; no order of any kind has been sent.
+**State:** the £2 test order ran for real and passed. Charles wrote the
+real-mode settings version himself at 13:27 UTC (`settings/v/1793626030000-4c261c4a.json`,
+previous the seed), pressed Resume placing at 13:31:22 UTC, read the markets
+at 13:34 UTC (28 markets: two of the morning's had closed), ran the test at
+13:41:25 UTC and pressed the kill switch at 13:42:40 UTC. The four Betfair
+calls (placeOrders, listCurrentOrders, cancelOrders, listCurrentOrders) each
+answered 200 at api.betfair.com; bet 449945060703, BACK 2.00 at 1000 on
+Sovereign Bay in the 19:30 Wolverhampton (1.264841684), EXECUTABLE with
+nothing matched, cancelled in full one second later, then absent; verdict
+"passed: placed, seen, cancelled, gone". Four Betfair records and one ledger
+record hold it all, with the HTTP trails. The stored settings now read mode
+real, access confirmed, placing disabled (four versions, the `previous`
+chain intact). The day's real money at risk as the server counts it: 2.00;
+paper 0.00. Server 0.7.3 (revision 00005-dhq), logged in; page 0.7.3.
+Nothing pushed since dd7ebe3; three status commits are local.
 
 **Waiting for (from Charles), since 2 November 2026:**
-- Charles writes the settings version himself (mode real, access confirmed,
-  placing disabled), presses Refresh status, Resume placing, runs the £2 test
-  order on the 20:30 Wolverhampton with the sentence typed, and presses the
-  kill switch. Then the build agent reads the records back and reports.
+- Whether the stored mode goes back to paper before step 4's paper trials
+  (with mode real, a Place from the page would be real). He writes it.
+- Mark's answers at the handover: which of Price A and Price B is the lay
+  target (the builder would take Price A), and what the Betfair cap means for
+  a lay. No order is built from a six-cell line until then.
+- Charles's word to start step 4 (the page's Place button, the confirm panel,
+  order status, Place all with confirmation), and his approval of its design
+  as proposed in the report of 13:48 UTC.
 - Charles pastes the 08:00 slip into the page and presses Resolve.
-- The Betfair cap's meaning and Price A and B, confirmed at the handover with
-  Mark.
 - Whether the pages.dev addresses should go behind Access.
 
-**Last did:** read the config bucket (one version), the settings code (the
-newest object by name is in force, re-read within five seconds on any
-request; `previous` is the full object name), the test-order path's
-refusals in order, and the 13:06 catalogue record for the 20:30
-Wolverhampton; wrote the command and the steps. Did not write the version,
-did not enable placing, made no Betfair call. Before that: pushed main
-(seven commits) on Charles's word; 0.7.3 live; confirmed the login was his.
+**Last did:** read the test order back from the ledger, the four Betfair
+records, the settings versions and the revision's log; reported every step
+with its HTTP trail, the order's state at each step, the cancel response,
+the day's money at risk, and what was unexpected (the race was the 19:30,
+not the 20:30 Charles had named; Betfair labels the order GIBRALTAR
+REGULATOR; closed markets leave the catalogue). Made no Betfair call.
 
 **Found and reported, not acted on:**
 - The record of a failed Betfair call read "[redacted] token=[redacted]": the
