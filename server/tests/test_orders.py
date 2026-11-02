@@ -194,6 +194,15 @@ def test_build_names_every_reason_it_would_refuse():
     assert o["refusals"] == ["the race started at 13:00 UK; nothing is laid in play"]
 
 
+def test_a_line_without_a_betfair_cap_is_built_with_none_and_says_so():
+    orders, *_ = make(PAPER)
+    o = orders.build(line(cap=None), DAY, markets(), NOW)
+    assert o["status"] == "ok" and o["course_cap"] is None
+    assert o["notes"] == ["no Betfair cap on this line (the six-cell slip layout carries none): no course cap applied"]
+    assert orders.build(line(cap=""), DAY, markets(), NOW)["notes"] == o["notes"]
+    assert orders.build(line(), DAY, markets(), NOW)["notes"] == []
+
+
 def test_the_kill_switch_and_the_stored_mode_govern_the_build():
     orders, *_ = make({"mode": "paper", "placing_enabled": False})
     o = orders.build(line(), DAY, markets(), NOW)

@@ -2,6 +2,16 @@
 
 All notable changes to FB13. Dates are UK dates. Newest first.
 
+## [0.7.2] — 2026-11-02 — a line without a Betfair cap says so
+
+### Changed
+- `server/app/orders.py`: a line with no Betfair cap (the six-cell slip layout
+  of 2 November 2026 has no cap column) is built with no course cap, and the
+  build carries `notes` with "no Betfair cap on this line (the six-cell slip
+  layout carries none): no course cap applied", for the confirm panel of step
+  4 to show, as Charles asked. 96 pytest. No order is built from a six-cell
+  line until Charles confirms with Mark which price is the lay target.
+
 ## [0.7.1] — 2026-11-02 — Charles's rulings on step 3's choices
 
 ### Changed

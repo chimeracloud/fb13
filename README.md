@@ -354,6 +354,12 @@ Built 2 November 2026 (0.7.0) from Charles's rulings. No order has been sent.
   below, and the refusal says so); liability above the per-order cap; the day's money at
   risk for the mode above the per-day cap; the line already placed that day in
   that mode (cancelled or not). Paper and real are counted separately.
+- **A line without a Betfair cap** (the six-cell slip layout of 2 November
+  2026 has no cap column) is built with no course cap, and the build carries
+  the note "no Betfair cap on this line (the six-cell slip layout carries
+  none): no course cap applied" for the confirm panel to show (Charles,
+  2 November 2026). Nothing is built from a six-cell line until he confirms
+  with Mark which price is the lay target.
 - **Paper** builds the exact order, records it under `orders/<date>/` in the
   orders bucket as `placed` with `sent: false`, and sends nothing. **Real**
   sends it through the session and records Betfair's report (`placed` with

@@ -274,7 +274,11 @@ class Orders:
 
         cap_text = line.get("betfair_cap")
         course_cap = first_number(cap_text) if cap_text not in (None, "") else None
-        if cap_text not in (None, "") and course_cap is None:
+        notes: list[str] = []
+        if cap_text in (None, ""):
+            # The six-cell slip layout of 2 November 2026 has no Betfair cap column (Charles: treat it as absent and say so).
+            notes.append("no Betfair cap on this line (the six-cell slip layout carries none): no course cap applied")
+        elif course_cap is None:
             refusals.append(f"Betfair cap not read as an amount: {cap_text!r}")
 
         size = liability = None
@@ -308,6 +312,7 @@ class Orders:
         out: dict[str, Any] = {
             "status": "ok" if not refusals else "refused",
             "refusals": refusals,
+            "notes": notes,
             "mode": mode,
             "date": day.isoformat(),
             "slot": slot,
